@@ -13,7 +13,8 @@
     "pwa-assets": "pwa-assets-generator --preset minimal-2023 public/logo.svg",
     "db:start": "supabase start",
     "db:stop": "supabase stop",
-    "db:reset": "supabase db reset"
+    "db:reset": "supabase db reset",
+    "db:test": "docker exec -i supabase_db_shopper psql -U postgres -d postgres -v ON_ERROR_STOP=1 -q -f - < supabase/tests/schema_test.sql"
   },
   "dependencies": {
     "@fontsource-variable/fraunces": "^5.3.0",
