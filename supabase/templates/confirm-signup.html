@@ -1,0 +1,50 @@
+<!--
+  Plantilla "Confirm signup" de Supabase, en español.
+  Se pega en: Dashboard → Authentication → Emails → Confirm signup.
+
+  El enlace usa {{ .RedirectTo }} y {{ .TokenHash }} en lugar del
+  {{ .ConfirmationURL }} por omisión, y no es un capricho:
+
+  · {{ .RedirectTo }} es la URL que manda la app (emailRedirectTo), así que el
+    prefijo /shopper/ y el dominio salen bien sin depender de cómo esté escrito
+    el Site URL en el dashboard.
+  · {{ .TokenHash }} se canjea con verifyOtp, que funciona en CUALQUIER
+    navegador. El flujo por omisión necesita un verifier guardado en el
+    navegador donde empezó el registro — y este correo se abre en Safari,
+    mientras que el registro se hizo en el PWA instalado, que en iOS tiene otro
+    almacenamiento.
+
+  Los estilos van en línea porque los clientes de correo ignoran las hojas
+  externas y casi todos descartan también las etiquetas <style>.
+-->
+<div style="margin:0;padding:32px 16px;background:#FFF5F8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <div style="max-width:480px;margin:0 auto;background:#FFFFFF;border:1px solid #FBD9E6;border-radius:24px;padding:32px 28px;text-align:center;">
+
+    <div style="font-size:40px;line-height:1;margin-bottom:8px;">🎀</div>
+
+    <h1 style="margin:0 0 8px;font-size:24px;line-height:1.25;color:#3B2430;font-weight:700;">
+      Confirma tu cuenta
+    </h1>
+
+    <p style="margin:0 0 24px;font-size:16px;line-height:1.55;color:#8A6478;">
+      Toca el botón para activar tu cuenta de <strong style="color:#3B2430;">Shopper</strong> y
+      empezar a armar tus listas del súper.
+    </p>
+
+    <a
+      href="{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=signup"
+      style="display:inline-block;background:#D62E6A;color:#FFFFFF;text-decoration:none;font-size:16px;font-weight:700;padding:14px 32px;border-radius:999px;"
+    >
+      Confirmar mi cuenta
+    </a>
+
+    <p style="margin:24px 0 0;font-size:14px;line-height:1.5;color:#8A6478;">
+      Después de confirmar, vuelve a la app desde el icono de tu pantalla de inicio e inicia
+      sesión con tu correo y contraseña.
+    </p>
+
+    <p style="margin:20px 0 0;padding-top:20px;border-top:1px solid #FBD9E6;font-size:13px;line-height:1.5;color:#8A6478;">
+      Este es el único correo que te vamos a mandar. Si no creaste esta cuenta, puedes ignorarlo.
+    </p>
+  </div>
+</div>
