@@ -99,6 +99,14 @@ traen `Dxtm`). Sin `grant` explícito, toda consulta responde
   destruir datos.
 - Al añadir una tabla nueva, añade su `grant` en la misma migración.
 
+Y hay **dos vías de acceso distintas** que hay que cerrar por separado:
+1. Concesiones al rol **`anon`** (privilegios por omisión de Supabase) → `0010`.
+2. Concesión implícita al pseudo-rol **`PUBLIC`**, que Postgres pone en *toda*
+   función nueva → `0011`. Revocar a `anon` **no** deshace esta.
+
+Al crear una función nueva, revócala de `PUBLIC` y concédela solo a quien la
+necesite. Las de trigger no se conceden a nadie: las invoca el motor.
+
 ### Las fuentes se declaran a mano
 `src/styles/theme.css` escribe sus propios `@font-face` en vez de importar el
 `index.css` de fontsource. No es purismo:

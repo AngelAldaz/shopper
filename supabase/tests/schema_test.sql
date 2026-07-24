@@ -439,6 +439,30 @@ select pg_temp.check(
   'authenticated conserva el helper que necesitan las políticas RLS'
 );
 
+-- Vía distinta de la anterior: Postgres concede EXECUTE a PUBLIC en toda
+-- función nueva, y revocar al rol `anon` no lo deshace. Se comprueba sobre
+-- norm_text porque fue justo la que se escapó en producción.
+do $$
+declare
+  f text;
+begin
+  foreach f in array array[
+    'public.norm_text(text)',
+    'public.is_household_member(uuid)',
+    'public.shares_household_with(uuid)',
+    'public.storage_path_is_mine(text)',
+    'public.create_household(text)',
+    'public.join_household(text)'
+  ]
+  loop
+    if has_function_privilege('public', f, 'EXECUTE') then
+      raise exception E'\n  ✗ % sigue concedida al pseudo-rol PUBLIC', f;
+    end if;
+  end loop;
+  raise notice '  ✓ ninguna función queda concedida a PUBLIC';
+end;
+$$;
+
 -- ---------------------------------------------------------------------------
 \warn ''
 \warn '── configuración del bucket ─────────────────────────────────'
