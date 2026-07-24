@@ -1,9 +1,13 @@
 import { useState } from 'react'
-import { Moon, Smartphone, Sun } from 'lucide-react'
+import { LogOut, Moon, Smartphone, Sun } from 'lucide-react'
 import { PageHeader } from '@/components/PageHeader'
+import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Chip } from '@/components/ui/Chip'
 import { applyTheme, getThemePref, type ThemePref } from '@/lib/theme'
+import { supabase } from '@/lib/supabase'
+import { useSession } from '@/features/auth/SessionProvider'
+import { HouseholdSection } from '@/features/household/HouseholdSection'
 
 const OPTIONS: { value: ThemePref; label: string; Icon: typeof Sun }[] = [
   { value: 'light', label: 'Claro', Icon: Sun },
@@ -12,6 +16,7 @@ const OPTIONS: { value: ThemePref; label: string; Icon: typeof Sun }[] = [
 ]
 
 export function MePage() {
+  const { session } = useSession()
   const [pref, setPref] = useState<ThemePref>(getThemePref)
 
   function choose(next: ThemePref) {
@@ -19,11 +24,15 @@ export function MePage() {
     applyTheme(next)
   }
 
+  const name = session?.user.user_metadata?.['display_name'] as string | undefined
+
   return (
     <>
-      <PageHeader title="Yo" />
+      <PageHeader title={name || 'Yo'} subtitle={session?.user.email ?? undefined} />
 
       <div className="flex flex-col gap-4 px-5">
+        <HouseholdSection />
+
         <Card className="p-4">
           <h2 className="mb-3 text-lg font-semibold">Tema</h2>
           <div className="flex flex-wrap gap-2">
@@ -44,6 +53,15 @@ export function MePage() {
             del navegador y funciona sin señal dentro del súper.
           </p>
         </Card>
+
+        <Button
+          variant="ghost"
+          block
+          icon={<LogOut size={17} />}
+          onClick={() => supabase.auth.signOut()}
+        >
+          Cerrar sesión
+        </Button>
       </div>
     </>
   )

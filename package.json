@@ -15,6 +15,7 @@
     "db:stop": "supabase stop",
     "db:reset": "supabase db reset",
     "db:bundle": "node scripts/bundle-schema.mjs",
+    "test:flow": "pwsh -NoProfile -File scripts/test-household-flow.ps1",
     "db:test": "docker cp supabase/tests/schema_test.sql supabase_db_shopper:/tmp/schema_test.sql && docker exec supabase_db_shopper psql -U postgres -d postgres -v ON_ERROR_STOP=1 -q -f /tmp/schema_test.sql"
   },
   "dependencies": {

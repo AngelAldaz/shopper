@@ -4,6 +4,8 @@ import { Bow } from '@/components/ui/Bow'
 import { SessionProvider, useSession } from '@/features/auth/SessionProvider'
 import { AuthPage } from '@/features/auth/AuthPage'
 import { ConfirmEmailPage } from '@/features/auth/ConfirmEmailPage'
+import { HouseholdProvider, useHousehold } from '@/features/household/useHousehold'
+import { OnboardingPage } from '@/features/household/OnboardingPage'
 import { ListsPage } from '@/features/lists/ListsPage'
 import { CatalogPage } from '@/features/products/CatalogPage'
 import { StoresPage } from '@/features/stores/StoresPage'
@@ -26,6 +28,24 @@ function RequireSession() {
   return <Outlet />
 }
 
+/** El proveedor va fuera del guardián para que el onboarding pueda refrescarlo. */
+function WithHousehold() {
+  return (
+    <HouseholdProvider>
+      <HouseholdGate />
+    </HouseholdProvider>
+  )
+}
+
+function HouseholdGate() {
+  const { household, loading } = useHousehold()
+  if (loading) return <Splash />
+  // Sin hogar no hay nada que enseñar: ni catálogo, ni supers, ni listas
+  // pertenecen a nadie todavía.
+  if (!household) return <OnboardingPage />
+  return <Outlet />
+}
+
 function Shell() {
   return (
     <div className="min-h-dvh bg-bg">
@@ -43,16 +63,18 @@ export function App() {
   return (
     <SessionProvider>
       <Routes>
-        {/* Fuera del guardián a propósito: esta ruta se abre desde el correo,
-            en un navegador donde todavía no hay sesión. */}
+        {/* Fuera de los guardianes a propósito: esta ruta se abre desde el
+            correo, en un navegador donde todavía no hay sesión. */}
         <Route path="auth/confirm" element={<ConfirmEmailPage />} />
 
         <Route element={<RequireSession />}>
-          <Route element={<Shell />}>
-            <Route index element={<ListsPage />} />
-            <Route path="catalogo" element={<CatalogPage />} />
-            <Route path="supers" element={<StoresPage />} />
-            <Route path="yo" element={<MePage />} />
+          <Route element={<WithHousehold />}>
+            <Route element={<Shell />}>
+              <Route index element={<ListsPage />} />
+              <Route path="catalogo" element={<CatalogPage />} />
+              <Route path="supers" element={<StoresPage />} />
+              <Route path="yo" element={<MePage />} />
+            </Route>
           </Route>
         </Route>
       </Routes>
