@@ -400,6 +400,47 @@ select pg_temp.check(
 
 -- ---------------------------------------------------------------------------
 \warn ''
+\warn '── el rol anónimo no alcanza nada ───────────────────────────'
+-- ---------------------------------------------------------------------------
+-- Segundo cerrojo, independiente de RLS. Se comprueba con has_*_privilege y no
+-- con un SELECT porque lo que interesa es que el PRIVILEGIO no exista: si algún
+-- día una tabla sale sin RLS, esto es lo único que impediría leerla con la anon
+-- key, que es pública y viaja en el bundle.
+-- ---------------------------------------------------------------------------
+do $$
+declare
+  t text;
+begin
+  foreach t in array array[
+    'stores', 'products', 'product_prices', 'shopping_lists', 'list_items',
+    'price_history', 'households', 'household_members', 'profiles'
+  ]
+  loop
+    if has_table_privilege('anon', 'public.' || t, 'SELECT') then
+      raise exception E'\n  ✗ anon todavía puede leer la tabla %', t;
+    end if;
+  end loop;
+  raise notice '  ✓ anon no tiene SELECT en ninguna tabla';
+end;
+$$;
+
+select pg_temp.check(
+  not has_function_privilege('anon', 'public.generate_invite_code()', 'EXECUTE'),
+  'anon no puede llamar al generador de códigos de invitación'
+);
+select pg_temp.check(
+  not has_function_privilege('authenticated', 'public.generate_invite_code()', 'EXECUTE'),
+  'ni siquiera un usuario con sesión puede llamarlo directamente'
+);
+-- Pero las RPC que sí lo usan por dentro son SECURITY DEFINER, así que siguen
+-- funcionando. Esto ya quedó demostrado arriba: el hogar se creó con su código.
+select pg_temp.check(
+  has_function_privilege('authenticated', 'public.is_household_member(uuid)', 'EXECUTE'),
+  'authenticated conserva el helper que necesitan las políticas RLS'
+);
+
+-- ---------------------------------------------------------------------------
+\warn ''
 \warn '── configuración del bucket ─────────────────────────────────'
 -- ---------------------------------------------------------------------------
 select pg_temp.check(
