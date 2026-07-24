@@ -19,7 +19,11 @@ npm test             # vitest
 npm run pwa-assets   # regenera iconos desde public/logo.svg
 npm run db:start     # Supabase local en Docker
 npm run db:reset     # reaplica las migraciones en local
+npm run db:test      # 50 comprobaciones del esquema contra Postgres real
 ```
+
+Local: Studio en http://127.0.0.1:54323 · correos en Mailpit
+http://127.0.0.1:54324 (el stack local no manda nada a internet).
 
 ## Requisitos del entorno
 
@@ -71,6 +75,18 @@ cliente y el índice del servidor ordenan distinto.
 > que la origen, así que **`ñ` se convertía en otra letra** (piña, año, ñame).
 > Si tocas esa función, cuenta los caracteres de ambas cadenas y corre
 > `src/lib/norm.test.ts`.
+
+### RLS no basta: hacen falta los GRANT
+Supabase **ya no** concede automáticamente `SELECT/INSERT/UPDATE` a `authenticated`
+sobre las tablas nuevas del esquema `public` (los privilegios por omisión solo
+traen `Dxtm`). Sin `grant` explícito, toda consulta responde
+`permission denied for table …` aunque las políticas estén perfectas.
+
+- RLS decide **qué filas**; el GRANT decide si la tabla **existe** para ese rol.
+- **Nunca se concede DELETE** en tablas de datos: todo borrado es suave (un
+  `update` de `deleted_at`). Así ningún error del cliente ni sesión robada puede
+  destruir datos.
+- Al añadir una tabla nueva, añade su `grant` en la misma migración.
 
 ### Las fuentes se declaran a mano
 `src/styles/theme.css` escribe sus propios `@font-face` en vez de importar el
