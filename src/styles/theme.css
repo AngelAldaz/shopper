@@ -1,0 +1,205 @@
+@import 'tailwindcss';
+
+@import '@fontsource-variable/fraunces/index.css';
+@import '@fontsource-variable/nunito/index.css';
+
+/* El tema lo manda un atributo en <html>, no la media query, para que se pueda
+   forzar claro u oscuro desde la app. El script de index.html lo escribe antes
+   del primer pintado para que no haya destello. */
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+:root {
+  --c-bg: #fff5f8;
+  --c-surface: #ffffff;
+  --c-surface-2: #fff0f5;
+  --c-border: #fbd9e6;
+  --c-text: #3b2430;
+  --c-muted: #8a6478;
+
+  --c-primary: #d62e6a;
+  --c-on-primary: #ffffff;
+  --c-primary-soft: #ffe3ee;
+  --c-primary-ink: #a81a50;
+
+  --c-success: #2e8b6b;
+  --c-success-soft: #e0f5ed;
+  --c-warning: #b8730e;
+  --c-warning-soft: #fdf0dc;
+  --c-danger: #c62b4b;
+  --c-danger-soft: #fde7ec;
+
+  --c-shadow: 214 46 106;
+}
+
+[data-theme='dark'] {
+  --c-bg: #17101a;
+  --c-surface: #221926;
+  --c-surface-2: #2c2032;
+  --c-border: #3a2a3a;
+  --c-text: #f6e8f0;
+  --c-muted: #c3a8ba;
+
+  --c-primary: #ff7fae;
+  --c-on-primary: #2a0f1b;
+  --c-primary-soft: #3a2030;
+  --c-primary-ink: #ffc2d8;
+
+  --c-success: #6fd9ae;
+  --c-success-soft: #16352b;
+  --c-warning: #f0b45e;
+  --c-warning-soft: #3a2a12;
+  --c-danger: #ff8a9e;
+  --c-danger-soft: #3d1a22;
+
+  --c-shadow: 0 0 0;
+}
+
+/* `inline` es lo que permite cambiar de tema en caliente: las utilidades
+   generadas apuntan a la var() en lugar del color ya resuelto. */
+@theme inline {
+  --color-bg: var(--c-bg);
+  --color-surface: var(--c-surface);
+  --color-surface-2: var(--c-surface-2);
+  --color-border: var(--c-border);
+  --color-text: var(--c-text);
+  --color-muted: var(--c-muted);
+
+  --color-primary: var(--c-primary);
+  --color-on-primary: var(--c-on-primary);
+  --color-primary-soft: var(--c-primary-soft);
+  --color-primary-ink: var(--c-primary-ink);
+
+  --color-success: var(--c-success);
+  --color-success-soft: var(--c-success-soft);
+  --color-warning: var(--c-warning);
+  --color-warning-soft: var(--c-warning-soft);
+  --color-danger: var(--c-danger);
+  --color-danger-soft: var(--c-danger-soft);
+
+  --font-display: 'Fraunces Variable', ui-serif, Georgia, serif;
+  --font-sans: 'Nunito Variable', ui-sans-serif, system-ui, -apple-system, sans-serif;
+
+  --radius-soft: 0.875rem;
+  --radius-card: 1.5rem;
+  --radius-sheet: 1.75rem;
+
+  --shadow-sweet: 0 8px 24px -8px rgb(var(--c-shadow) / 0.18);
+  --shadow-float: 0 12px 32px -6px rgb(var(--c-shadow) / 0.32);
+  --shadow-sheet: 0 -8px 40px -8px rgb(var(--c-shadow) / 0.22);
+
+  --ease-sweet: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    /* Sin esto Safari deja un flash gris al tocar cualquier cosa. */
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-sans);
+    /* La app nunca hace scroll horizontal; el rebote lateral de iOS se siente
+       a roto dentro de un PWA instalado. */
+    overscroll-behavior-x: none;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    /* SOFT redondea las serifas y WONK inclina la itálica: es lo que separa a
+       Fraunces de una serif de periódico. */
+    font-variation-settings: 'SOFT' 40, 'WONK' 1;
+    letter-spacing: -0.015em;
+  }
+
+  /* 16px es el mínimo: por debajo iOS hace zoom al enfocar y descuadra toda
+     la captura de productos. */
+  input,
+  textarea,
+  select {
+    font-size: 1rem;
+    font-family: inherit;
+  }
+
+  button {
+    font-family: inherit;
+    /* Quita el retraso de 300 ms del doble tap. */
+    touch-action: manipulation;
+  }
+
+  ::selection {
+    background: var(--color-primary-soft);
+    color: var(--color-primary-ink);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@utility safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+@utility safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+@utility safe-x {
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.28);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@utility animate-pop {
+  animation: pop 0.36s var(--ease-sweet);
+}
+
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+@utility animate-sheet {
+  animation: sheet-up 0.28s var(--ease-sweet);
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@utility animate-fade {
+  animation: fade-in 0.18s ease-out;
+}

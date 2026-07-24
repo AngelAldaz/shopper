@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Shopper">
+  <defs>
+    <linearGradient id="rosa" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FF9CC4" />
+      <stop offset="1" stop-color="#D62E6A" />
+    </linearGradient>
+    <linearGradient id="bolsa" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF" />
+      <stop offset="1" stop-color="#FFECF4" />
+    </linearGradient>
+  </defs>
+
+  <rect width="512" height="512" rx="112" fill="url(#rosa)" />
+
+  <!-- Asa de la bolsa -->
+  <path
+    d="M206 218 C206 168 224 152 256 152 C288 152 306 168 306 218"
+    fill="none"
+    stroke="#FFFFFF"
+    stroke-width="22"
+    stroke-linecap="round"
+  />
+
+  <!-- Cuerpo de la bolsa -->
+  <path
+    d="M152 214 L360 214 L352 424 C351 442 337 454 319 454 L193 454 C175 454 161 442 160 424 Z"
+    fill="url(#bolsa)"
+  />
+
+  <!-- Corazoncito -->
+  <path
+    d="M256 360 C256 360 212 332 212 306 C212 291 224 282 236 282 C245 282 252 289 256 295 C260 289 267 282 276 282 C288 282 300 291 300 306 C300 332 256 360 256 360 Z"
+    fill="#FF6FA5"
+  />
+
+  <!-- Moño -->
+  <g>
+    <path d="M256 148 C240 122 204 116 196 136 C188 156 222 164 256 148 Z" fill="#FFFFFF" />
+    <path d="M256 148 C272 122 308 116 316 136 C324 156 290 164 256 148 Z" fill="#FFFFFF" />
+    <circle cx="256" cy="148" r="13" fill="#FFFFFF" />
+  </g>
+</svg>

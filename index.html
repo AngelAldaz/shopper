@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="es-MX">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- viewport-fit=cover deja que el contenido llegue bajo la Dynamic Island;
+         las safe areas se respetan con env(safe-area-inset-*) en el CSS.
+         maximum-scale=1 evita que iOS haga zoom al enfocar un input. -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"
+    />
+    <meta name="description" content="Tus listas de súper con el mejor precio de cada producto." />
+
+    <title>Shopper</title>
+
+    <!-- El color de la barra de estado sigue al tema, en los dos sentidos. -->
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FFF5F8" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#17101A" />
+
+    <link rel="icon" href="/shopper/favicon.ico" sizes="48x48" />
+    <link rel="icon" href="/shopper/logo.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/shopper/apple-touch-icon-180x180.png" />
+
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Shopper" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="format-detection" content="telephone=no" />
+
+    <script>
+      // Corre antes del primer pintado: sin esto se ve un destello blanco
+      // al abrir la app en modo oscuro.
+      ;(function () {
+        try {
+          var saved = localStorage.getItem('shopper:theme')
+          var dark =
+            saved === 'dark' ||
+            (saved !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches)
+          document.documentElement.dataset.theme = dark ? 'dark' : 'light'
+        } catch (e) {
+          document.documentElement.dataset.theme = 'light'
+        }
+      })()
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
