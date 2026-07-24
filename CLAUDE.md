@@ -92,6 +92,8 @@ a Cloudflare R2 es cambiar ese archivo y nada más.
 
 ## Despliegue
 
+**En vivo:** https://angelaldaz.github.io/shopper/ · repo `AngelAldaz/shopper`
+
 GitHub Pages desde Actions, en `/shopper/`. El repo **tiene que ser público**:
 GitHub Pages gratis no publica desde repos privados.
 
@@ -105,8 +107,8 @@ GitHub Pages gratis no publica desde repos privados.
 
 ## Estado
 
-- [x] **Fase 0** — Esqueleto y estética *(pendiente tu visto bueno visual)*
-- [ ] Fase 1 — Repo y GitHub Pages en vivo
+- [x] **Fase 0** — Esqueleto y estética
+- [x] **Fase 1** — Repo y GitHub Pages en vivo *(instalado en el iPhone)*
 - [ ] Fase 2 — Supabase: esquema, RLS y sesiones
 - [ ] Fase 3 — Hogar compartido
 - [ ] Fase 4 — Motor local-first (Dexie + sync)
