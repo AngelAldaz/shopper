@@ -76,6 +76,17 @@ cliente y el índice del servidor ordenan distinto.
 > Si tocas esa función, cuenta los caracteres de ambas cadenas y corre
 > `src/lib/norm.test.ts`.
 
+### Variables de entorno vacías ≠ ausentes
+Vite sustituye `import.meta.env.VITE_*` **al compilar**. Si la variable no está
+definida en el CI, en el bundle queda `""`, no `undefined` — así que **`??` no
+sirve** para el respaldo: deja pasar la cadena vacía. Con `createClient("")` la
+app queda **en blanco** al cargar el módulo, sin ningún error visible.
+
+Toda lectura de `import.meta.env` pasa por `src/lib/supabaseConfig.ts`, que
+trata `undefined`, `""` y espacios como "sin configurar". Síntoma para
+reconocerlo: el bundle publicado no contiene **ni** el valor real **ni** el de
+respaldo (el empaquetador plegó la constante y descartó el respaldo).
+
 ### RLS no basta: hacen falta los GRANT
 Supabase **ya no** concede automáticamente `SELECT/INSERT/UPDATE` a `authenticated`
 sobre las tablas nuevas del esquema `public` (los privilegios por omisión solo
@@ -120,6 +131,15 @@ GitHub Pages gratis no publica desde repos privados.
   `start_url` y `navigateFallback` del PWA, o el service worker no toma control.
 - `dist/404.html` es una copia de `index.html` (lo hace un plugin en el build):
   arregla los deep links en frío, antes de que el SW esté instalado.
+
+**Si el build pasa pero `deploy-pages` falla**, mira la anotación del check:
+```
+Invoke-RestMethod "https://api.github.com/repos/AngelAldaz/shopper/commits/<sha>/check-runs"
+```
+El caso visto: *"due to in progress deployment. Please cancel <sha> first"* — un
+despliegue anterior se queda encajado en el backend de Pages y rechaza todos los
+siguientes en ~20 s. No es del código. Se resuelve esperando, o reiniciando el
+origen en Settings → Pages (Source: None → GitHub Actions).
 
 ## Estado
 
