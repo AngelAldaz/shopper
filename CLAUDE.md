@@ -72,6 +72,19 @@ cliente y el índice del servidor ordenan distinto.
 > Si tocas esa función, cuenta los caracteres de ambas cadenas y corre
 > `src/lib/norm.test.ts`.
 
+### Las fuentes se declaran a mano
+`src/styles/theme.css` escribe sus propios `@font-face` en vez de importar el
+`index.css` de fontsource. No es purismo:
+
+- Ese `index.css` arrastra los subconjuntos cirílico, vietnamita y latin-ext
+  (~143 KB de precaché tirados). El español completo cabe en el latino.
+- Y carga el archivo `wght`, que **solo expone el eje de peso**: con él,
+  `font-variation-settings: 'SOFT'` se ignora sin avisar y Fraunces se ve como
+  una serif de periódico. El archivo `soft` sí lo expone.
+
+Si algún día los títulos "se ven raros", mira primero qué archivo de Fraunces
+se está cargando.
+
 ### Fotos detrás de un adaptador
 Todo pasa por `src/lib/photos.ts` (`upload` · `publicUrl` · `remove`). Hoy es
 Supabase Storage (1 GB ≈ 12,500 fotos, usaremos ~6 %). Si algún día crece, migrar
@@ -92,7 +105,7 @@ GitHub Pages gratis no publica desde repos privados.
 
 ## Estado
 
-- [x] **Fase 0** — Esqueleto y estética *(en curso)*
+- [x] **Fase 0** — Esqueleto y estética *(pendiente tu visto bueno visual)*
 - [ ] Fase 1 — Repo y GitHub Pages en vivo
 - [ ] Fase 2 — Supabase: esquema, RLS y sesiones
 - [ ] Fase 3 — Hogar compartido
