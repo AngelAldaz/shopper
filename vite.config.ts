@@ -1,4 +1,6 @@
-import { defineConfig } from 'vite'
+// `vitest/config` en vez de `vite`: es el que extiende la config con la clave
+// `test`, si no TypeScript la rechaza como propiedad desconocida.
+import { defineConfig } from 'vitest/config'
 import { fileURLToPath, URL } from 'node:url'
 import { copyFileSync } from 'node:fs'
 import react from '@vitejs/plugin-react'
