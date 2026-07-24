@@ -153,7 +153,7 @@ origen en Settings → Pages (Source: None → GitHub Actions).
 
 - [x] **Fase 0** — Esqueleto y estética
 - [x] **Fase 1** — Repo y GitHub Pages en vivo *(instalado en el iPhone)*
-- [ ] Fase 2 — Supabase: esquema, RLS y sesiones
+- [x] **Fase 2** — Supabase: esquema, RLS y sesiones *(producción verificada: 0 fugas)*
 - [ ] Fase 3 — Hogar compartido
 - [ ] Fase 4 — Motor local-first (Dexie + sync)
 - [ ] Fase 5 — Supers, catálogo, fotos y precios
