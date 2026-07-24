@@ -15,7 +15,8 @@ npm run dev          # http://localhost:5173/shopper/
 npm run build        # typecheck + build (genera dist/404.html para GH Pages)
 npm run preview
 npm run typecheck
-npm test             # vitest
+npm test             # vitest (52 pruebas)
+npm run test:flow    # integración contra el Supabase local (necesita db:start)
 npm run pwa-assets   # regenera iconos desde public/logo.svg
 npm run db:start     # Supabase local en Docker
 npm run db:reset     # reaplica las migraciones en local
@@ -60,6 +61,25 @@ Consecuencias que hay que respetar en todo el código:
   huevo de Walmart y volverlo a agregar chocaría contra la restricción.
 - `updated_at` **lo pone el servidor** con un trigger. Los relojes de los
   teléfonos se desfasan; el del servidor es el único confiable para el delta.
+
+### Cómo se escriben datos
+**Nunca** llames a `supabase.from(...)` para escribir desde una pantalla. Todo
+pasa por `src/db/mutate.ts`:
+
+```ts
+await saveRow('product_prices', { id, household_id, product_id, store_id, price })
+await softDelete('stores', id)
+```
+
+Eso escribe en Dexie (la UI reacciona al instante), encola el cambio y dispara
+la subida. Escribir directo a Supabase rompe el offline y se pierde si no hay red.
+
+Para leer, `useLiveQuery` contra `db`. Nunca `supabase.from(...).select()`.
+
+Al añadir una columna nueva a una tabla sincronizable, **añádela a
+`PUSHABLE_COLUMNS` en `src/db/schema.ts`** o no viajará al servidor. Es una lista
+blanca a propósito: `products.search_key` es `GENERATED ALWAYS` y mandarla hace
+fallar el insert entero (verificado contra PostgREST en el script de integración).
 
 ### No hay TanStack Query
 Sobra en una app local-first: el estado del servidor vive en IndexedDB y Dexie ya
@@ -154,8 +174,8 @@ origen en Settings → Pages (Source: None → GitHub Actions).
 - [x] **Fase 0** — Esqueleto y estética
 - [x] **Fase 1** — Repo y GitHub Pages en vivo *(instalado en el iPhone)*
 - [x] **Fase 2** — Supabase: esquema, RLS y sesiones *(producción verificada: 0 fugas)*
-- [ ] Fase 3 — Hogar compartido
-- [ ] Fase 4 — Motor local-first (Dexie + sync)
+- [x] **Fase 3** — Hogar compartido
+- [x] **Fase 4** — Motor local-first (Dexie + sync)
 - [ ] Fase 5 — Supers, catálogo, fotos y precios
 - [ ] Fase 6 — Listas y mejor precio
 - [ ] Fase 7 — Historial de precios, compartir y keepalive
