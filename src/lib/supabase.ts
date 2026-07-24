@@ -1,26 +1,27 @@
 import { createClient } from '@supabase/supabase-js'
+import { resolveSupabaseConfig } from './supabaseConfig'
 
-const url = import.meta.env.VITE_SUPABASE_URL
-const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+const config = resolveSupabaseConfig(
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_ANON_KEY,
+)
 
 /**
  * Si faltan las llaves, la app arranca igual y lo dice en la pantalla de
- * entrada, en lugar de quedarse en blanco con un error de consola que solo
- * ve quien abre las DevTools.
+ * entrada. Ver supabaseConfig.ts para por qué eso necesita cuidado.
  */
-export const isSupabaseConfigured = Boolean(url && anonKey)
+export const isSupabaseConfigured = config.configured
 
-export const supabase = createClient(url ?? 'http://localhost:54321', anonKey ?? 'sin-llave', {
+export const supabase = createClient(config.url, config.anonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
 
     // Los correos de confirmación se abren en Safari, NO en el PWA instalado
-    // (en iOS son almacenamientos distintos). Por eso el enlace apunta a
-    // /auth/confirm con un token_hash y lo canjeamos a mano con verifyOtp, que
-    // funciona en cualquier navegador. La detección automática de sesión en la
-    // URL depende de un verifier que solo existe en el navegador donde
-    // empezaste, así que aquí no sirve.
+    // (en iOS son almacenamientos distintos). El flujo por omisión de Supabase
+    // ya confirma la cuenta del lado del servidor y redirige con el resultado
+    // en el fragmento de la URL, que leemos en ConfirmEmailPage. La detección
+    // automática aquí no ayuda y podría consumir el fragmento antes.
     detectSessionInUrl: false,
 
     storageKey: 'shopper-auth',
