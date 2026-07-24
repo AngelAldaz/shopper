@@ -1,7 +1,32 @@
 @import 'tailwindcss';
 
-@import '@fontsource-variable/fraunces/index.css';
-@import '@fontsource-variable/nunito/index.css';
+/* Las fuentes se declaran a mano en lugar de importar el index.css de
+   fontsource por dos razones concretas:
+
+   1. Ese index.css trae los subconjuntos cirílico, vietnamita y latin-ext, que
+      no usamos: ~143 KB de precaché tirados en un PWA que se instala por datos
+      móviles. El español entero (á é í ó ú ü ñ) cabe en el subconjunto latino.
+   2. Trae el archivo `wght`, que SOLO expone el eje de peso. Con él,
+      `font-variation-settings: 'SOFT' …` se ignora en silencio y Fraunces se ve
+      como una serif de periódico en vez de la versión redondeada y dulce.
+      El archivo `soft` sí expone el eje SOFT. */
+@font-face {
+  font-family: 'Fraunces Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url('@fontsource-variable/fraunces/files/fraunces-latin-soft-normal.woff2')
+    format('woff2-variations');
+}
+
+@font-face {
+  font-family: 'Nunito Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 1000;
+  src: url('@fontsource-variable/nunito/files/nunito-latin-wght-normal.woff2')
+    format('woff2-variations');
+}
 
 /* El tema lo manda un atributo en <html>, no la media query, para que se pueda
    forzar claro u oscuro desde la app. El script de index.html lo escribe antes
@@ -27,6 +52,7 @@
   --c-warning-soft: #fdf0dc;
   --c-danger: #c62b4b;
   --c-danger-soft: #fde7ec;
+  --c-on-danger: #ffffff;
 
   --c-shadow: 214 46 106;
 }
@@ -50,6 +76,9 @@
   --c-warning-soft: #3a2a12;
   --c-danger: #ff8a9e;
   --c-danger-soft: #3d1a22;
+  /* En oscuro el rojo es claro, así que el texto encima tiene que ser oscuro
+     o el botón destructivo quedaría ilegible. */
+  --c-on-danger: #3d1018;
 
   --c-shadow: 0 0 0;
 }
@@ -75,6 +104,7 @@
   --color-warning-soft: var(--c-warning-soft);
   --color-danger: var(--c-danger);
   --color-danger-soft: var(--c-danger-soft);
+  --color-on-danger: var(--c-on-danger);
 
   --font-display: 'Fraunces Variable', ui-serif, Georgia, serif;
   --font-sans: 'Nunito Variable', ui-sans-serif, system-ui, -apple-system, sans-serif;
@@ -111,9 +141,11 @@
   h2,
   h3 {
     font-family: var(--font-display);
-    /* SOFT redondea las serifas y WONK inclina la itálica: es lo que separa a
-       Fraunces de una serif de periódico. */
-    font-variation-settings: 'SOFT' 40, 'WONK' 1;
+    /* SOFT (0–100) redondea las serifas: es lo que hace que Fraunces se lea
+       dulce en vez de editorial. WONK queda fuera porque afecta sobre todo a
+       la itálica, que no usamos, y obligaría a cargar el archivo `full`
+       (118 KB frente a 61 KB). */
+    font-variation-settings: 'SOFT' 60;
     letter-spacing: -0.015em;
   }
 
