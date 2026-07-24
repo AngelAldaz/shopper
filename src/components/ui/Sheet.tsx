@@ -81,7 +81,11 @@ export function Sheet({ open, onClose, title, footer, children, className }: Pro
         <div className="flex-1 overflow-y-auto overscroll-contain px-5 pb-2">{children}</div>
 
         {footer && (
-          <div className="safe-bottom border-t border-border px-5 pt-3 pb-3">{footer}</div>
+          // Mismo caso que PageHeader: inset del home indicator + aire propio
+          // en un solo padding-bottom, o las dos clases se pisan.
+          <div className="border-t border-border px-5 pt-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
+            {footer}
+          </div>
         )}
       </div>
     </dialog>

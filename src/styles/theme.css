@@ -186,6 +186,11 @@
   }
 }
 
+/* Áreas seguras de iOS.
+   OJO: estas utilidades escriben el padding entero, así que NO se pueden
+   combinar con pt-*/pb-* en el mismo elemento — se pisarían y ganaría solo
+   una. Si además hace falta aire propio, súmalos en un único valor:
+   `pt-[calc(env(safe-area-inset-top)+2rem)]`. */
 @utility safe-top {
   padding-top: env(safe-area-inset-top);
 }
