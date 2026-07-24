@@ -42,12 +42,23 @@ export function LeaveHouseholdSheet({ open, onClose, onLeft }: Props) {
     if (!open || !household || !soloYo) return
     // Solo se consultan los números cuando de verdad se va a borrar todo:
     // en los otros casos no se pierde nada y enseñarlos asustaría de más.
+    const hid = household.id
+    const contar = (tabla: string) =>
+      supabase
+        .from(tabla)
+        .select('id', { count: 'exact', head: true })
+        .eq('household_id', hid)
+        .is('deleted_at', null)
+
     void (async () => {
       const [p, pp, l] = await Promise.all([
-        supabase.from('products').select('id', { count: 'exact', head: true }).is('deleted_at', null),
-        supabase.from('product_prices').select('id', { count: 'exact', head: true }).is('deleted_at', null),
-        supabase.from('shopping_lists').select('id', { count: 'exact', head: true }).is('deleted_at', null),
+        contar('products'),
+        contar('product_prices'),
+        contar('shopping_lists'),
       ])
+      // Si algo falla, se enseña 0 en vez de dejar los puntos suspensivos para
+      // siempre: quien está a punto de borrar su hogar necesita una respuesta,
+      // no un cargando eterno.
       setCounts({ products: p.count ?? 0, prices: pp.count ?? 0, lists: l.count ?? 0 })
     })()
   }, [open, household, soloYo])

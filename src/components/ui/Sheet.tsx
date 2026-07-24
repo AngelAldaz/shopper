@@ -16,43 +16,60 @@ interface Props {
  * Hoja inferior. Casi toda acción de la app pasa por aquí en lugar de navegar a
  * otra pantalla: se llega con el pulgar y no se pierde el contexto.
  *
- * Va sobre <dialog> nativo a propósito — trae gratis la captura de foco, la
- * tecla Esc y el backdrop, que a mano casi siempre quedan a medias.
+ * Cuando está cerrada NO se monta nada. Es a propósito: una versión anterior
+ * mantenía el <dialog> siempre en el DOM con la clase `flex`, y esa clase pisa
+ * la regla del navegador `dialog:not([open]) { display: none }`. Resultado: la
+ * hoja se veía SIEMPRE, fuera de la capa superior (por debajo de la barra de
+ * pestañas), sin fondo oscuro y sin poder cerrarse, porque cerrar solo quita el
+ * atributo `open` y el `display: flex` seguía ganando.
+ *
+ * Desmontar es la defensa que no depende de acordarse: si no está abierta, no
+ * existe.
  */
 export function Sheet({ open, onClose, title, footer, children, className }: Props) {
+  if (!open) return null
+  return (
+    <SheetPanel onClose={onClose} title={title} footer={footer} className={className}>
+      {children}
+    </SheetPanel>
+  )
+}
+
+function SheetPanel({ onClose, title, footer, children, className }: Omit<Props, 'open'>) {
   const ref = useRef<HTMLDialogElement>(null)
 
   useEffect(() => {
-    const d = ref.current
-    if (!d) return
-    if (open && !d.open) d.showModal()
-    else if (!open && d.open) d.close()
-  }, [open])
+    // showModal() es lo que promueve el diálogo a la capa superior: por encima
+    // de TODO, sin importar z-index. Con show() o con el atributo `open` a mano,
+    // la barra de pestañas taparía la hoja.
+    ref.current?.showModal()
 
-  useEffect(() => {
-    if (!open) return
-    // showModal() no bloquea el scroll del fondo en Safari iOS: sin esto, al
-    // arrastrar sobre la hoja se mueve la página de atrás.
+    // Y no bloquea el scroll del fondo en Safari iOS: sin esto, arrastrar sobre
+    // la hoja mueve la página de atrás.
     const previous = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     return () => {
       document.body.style.overflow = previous
     }
-  }, [open])
+  }, [])
 
   return (
     <dialog
       ref={ref}
       onClose={onClose}
       onCancel={onClose}
-      // El <dialog> ocupa toda la pantalla y la hoja va dentro, así que un
-      // clic cuyo target es el propio dialog es un clic en el fondo.
+      // El <dialog> ocupa toda la pantalla y la hoja va dentro, así que un clic
+      // cuyo target es el propio dialog es un clic en el fondo.
       onClick={(e) => {
         if (e.target === ref.current) onClose()
       }}
       className={cn(
-        'fixed inset-0 m-0 flex h-full max-h-full w-full max-w-full items-end justify-center',
-        'bg-transparent p-0 text-text backdrop:bg-black/40 backdrop:backdrop-blur-[2px]',
+        // `open:flex` y no `flex` a secas: así el display solo se aplica cuando
+        // el diálogo está realmente abierto y nunca compite con la regla del
+        // navegador para el estado cerrado.
+        'fixed inset-0 m-0 hidden h-full max-h-full w-full max-w-full open:flex',
+        'items-end justify-center bg-transparent p-0 text-text',
+        'backdrop:bg-black/40 backdrop:backdrop-blur-[2px]',
       )}
     >
       <div
@@ -63,10 +80,10 @@ export function Sheet({ open, onClose, title, footer, children, className }: Pro
         )}
       >
         <div className="flex items-center gap-2 px-5 pt-3 pb-1">
-          <div className="flex-1">
+          <div className="min-w-0 flex-1">
             {/* Asa decorativa: le dice al pulgar que esto se arrastra. */}
             <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-border" />
-            {title && <h2 className="text-xl font-semibold">{title}</h2>}
+            {title && <h2 className="text-xl font-semibold text-balance">{title}</h2>}
           </div>
           <button
             type="button"
@@ -81,8 +98,8 @@ export function Sheet({ open, onClose, title, footer, children, className }: Pro
         <div className="flex-1 overflow-y-auto overscroll-contain px-5 pb-2">{children}</div>
 
         {footer && (
-          // Mismo caso que PageHeader: inset del home indicator + aire propio
-          // en un solo padding-bottom, o las dos clases se pisan.
+          // Inset del home indicator + aire propio en un solo padding-bottom:
+          // con dos clases separadas se pisarían.
           <div className="border-t border-border px-5 pt-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
             {footer}
           </div>
