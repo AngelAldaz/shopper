@@ -158,3 +158,16 @@ create policy "product_prices: solo mi hogar" on public.product_prices
   for all to authenticated
   using (public.is_household_member(household_id))
   with check (public.is_household_member(household_id));
+
+-- ---------------------------------------------------------------------------
+-- Permisos de tabla (ver la nota en 0002: sin esto, "permission denied").
+--
+-- Se concede SELECT, INSERT y UPDATE pero **deliberadamente NO DELETE**: en
+-- esta app todo borrado es suave, o sea un UPDATE de deleted_at. Al no dar el
+-- privilegio, ningún error del cliente ni ninguna sesión robada puede destruir
+-- datos de verdad; lo peor que puede pasar es marcarlos como borrados, y eso
+-- se deshace.
+-- ---------------------------------------------------------------------------
+grant select, insert, update on public.stores         to authenticated;
+grant select, insert, update on public.products       to authenticated;
+grant select, insert, update on public.product_prices to authenticated;

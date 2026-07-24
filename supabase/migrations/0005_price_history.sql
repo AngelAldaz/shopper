@@ -60,3 +60,7 @@ alter table public.price_history enable row level security;
 create policy "price_history: solo lectura de mi hogar"
   on public.price_history for select to authenticated
   using (public.is_household_member(household_id));
+
+-- Solo SELECT también a nivel de privilegio: doble cerrojo sobre una tabla que
+-- debe ser inmutable desde fuera.
+grant select on public.price_history to authenticated;

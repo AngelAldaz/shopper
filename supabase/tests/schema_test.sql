@@ -14,6 +14,15 @@
 -- ============================================================================
 
 \set ON_ERROR_STOP on
+-- Las comprobaciones devuelven void; sin esto psql imprime un bloque "(1 row)"
+-- por cada una y el resultado real se pierde entre el ruido. Lo que importa
+-- son los NOTICE con ✓ / ✗.
+\pset tuples_only on
+\pset format unaligned
+-- La salida de las consultas se descarta: las comprobaciones devuelven void y
+-- solo generarian lineas en blanco. Los encabezados usan \warn (stderr) para
+-- que salgan junto a los NOTICE con los checks, en orden.
+\o /dev/null
 begin;
 
 create or replace function pg_temp.check(cond boolean, msg text)
@@ -45,8 +54,8 @@ end;
 $$;
 
 -- ---------------------------------------------------------------------------
-\echo ''
-\echo '── norm_text ────────────────────────────────────────────────'
+\warn ''
+\warn '── norm_text ────────────────────────────────────────────────'
 -- ---------------------------------------------------------------------------
 select pg_temp.check(public.norm_text('Piña')      = 'pina',  'la ñ se convierte en n, no en otra letra');
 select pg_temp.check(public.norm_text('Año Nuevo') = 'ano nuevo', 'año no se corrompe');
@@ -63,8 +72,8 @@ select pg_temp.check(
 );
 
 -- ---------------------------------------------------------------------------
-\echo ''
-\echo '── preparación: tres usuarios ───────────────────────────────'
+\warn ''
+\warn '── preparación: tres usuarios ───────────────────────────────'
 -- ---------------------------------------------------------------------------
 insert into auth.users (instance_id, id, aud, role, email, encrypted_password,
                         email_confirmed_at, raw_app_meta_data, raw_user_meta_data,
@@ -89,8 +98,8 @@ select pg_temp.check(
 );
 
 -- ---------------------------------------------------------------------------
-\echo ''
-\echo '── hogar compartido ─────────────────────────────────────────'
+\warn ''
+\warn '── hogar compartido ─────────────────────────────────────────'
 -- ---------------------------------------------------------------------------
 select pg_temp.act_as('11111111-1111-1111-1111-111111111111');
 
@@ -113,8 +122,8 @@ select pg_temp.check(
 );
 
 -- ---------------------------------------------------------------------------
-\echo ''
-\echo '── catálogo y mejor precio ──────────────────────────────────'
+\warn ''
+\warn '── catálogo y mejor precio ──────────────────────────────────'
 -- ---------------------------------------------------------------------------
 select pg_temp.act_as('11111111-1111-1111-1111-111111111111');
 
@@ -164,8 +173,8 @@ select pg_temp.check(
 );
 
 -- ---------------------------------------------------------------------------
-\echo ''
-\echo '── historial de precios ─────────────────────────────────────'
+\warn ''
+\warn '── historial de precios ─────────────────────────────────────'
 -- ---------------------------------------------------------------------------
 select pg_temp.check(
   (select count(*) from public.price_history
@@ -185,8 +194,8 @@ select pg_temp.check(
 );
 
 -- ---------------------------------------------------------------------------
-\echo ''
-\echo '── quitar de UN super sin tocar los demás ───────────────────'
+\warn ''
+\warn '── quitar de UN super sin tocar los demás ───────────────────'
 -- ---------------------------------------------------------------------------
 update public.product_prices set deleted_at = now()
  where id = 'cccccccc-0000-4000-8000-000000000003';
@@ -203,13 +212,21 @@ select pg_temp.check(
 );
 
 -- El índice único es parcial, así que se puede volver a dar de alta.
+-- Se reinserta a 68.00 (más caro que Walmart y Soriana) a propósito: así este
+-- super no se cuela como "el más barato" y las comprobaciones de abajo siguen
+-- leyéndose solas en vez de depender de un estado acumulado.
 insert into public.product_prices (household_id, product_id, store_id, price)
-values (:'hogar'::uuid, 'bbbbbbbb-0000-4000-8000-000000000001', 'aaaaaaaa-0000-4000-8000-000000000003', 55.00);
+values (:'hogar'::uuid, 'bbbbbbbb-0000-4000-8000-000000000001', 'aaaaaaaa-0000-4000-8000-000000000003', 68.00);
 select pg_temp.check(true, 'se puede volver a agregar un precio borrado (índice único parcial)');
+select pg_temp.check(
+  (select store_id from public.best_prices where product_id = 'bbbbbbbb-0000-4000-8000-000000000001')
+    = 'aaaaaaaa-0000-4000-8000-000000000002'::uuid,
+  'y al reinsertarlo más caro, el más barato sigue siendo Soriana'
+);
 
 -- ---------------------------------------------------------------------------
-\echo ''
-\echo '── listas, gramaje y super fijado ───────────────────────────'
+\warn ''
+\warn '── listas, gramaje y super fijado ───────────────────────────'
 -- ---------------------------------------------------------------------------
 insert into public.shopping_lists (id, household_id, name)
 values ('dddddddd-0000-4000-8000-000000000001', :'hogar'::uuid, 'Despensa');
@@ -255,8 +272,8 @@ select pg_temp.check(
 );
 
 -- ---------------------------------------------------------------------------
-\echo ''
-\echo '── cascada de borrado suave ─────────────────────────────────'
+\warn ''
+\warn '── cascada de borrado suave ─────────────────────────────────'
 -- ---------------------------------------------------------------------------
 update public.stores set deleted_at = now() where id = 'aaaaaaaa-0000-4000-8000-000000000002';
 select pg_temp.check(
@@ -280,8 +297,35 @@ select pg_temp.check(
 );
 
 -- ---------------------------------------------------------------------------
-\echo ''
-\echo '── RLS: aislamiento entre hogares ───────────────────────────'
+\warn ''
+\warn '── rutas de storage ─────────────────────────────────────────'
+-- ---------------------------------------------------------------------------
+select pg_temp.check(
+  public.storage_path_is_mine(:'hogar' || '/abc123.webp'),
+  'puedo escribir en la carpeta de mi hogar'
+);
+select pg_temp.check(
+  not public.storage_path_is_mine('99999999-9999-4999-8999-999999999999/abc.webp'),
+  'no puedo escribir en la carpeta de otro hogar'
+);
+-- La razón de ser del CASE en esa función: sin él, el cast a uuid podría
+-- ejecutarse antes que el regex y reventar la subida con un error de Postgres
+-- en vez de un simple rechazo.
+select pg_temp.check(
+  not public.storage_path_is_mine('no-es-un-uuid/foto.webp'),
+  'una ruta que no empieza por uuid se rechaza sin reventar'
+);
+select pg_temp.check(
+  not public.storage_path_is_mine('foto-suelta-en-la-raiz.webp'),
+  'un archivo sin carpeta se rechaza sin reventar'
+);
+-- La configuración del bucket se comprueba abajo, con rol de administrador:
+-- storage.buckets tiene RLS y `authenticated` no tiene política de lectura ahí,
+-- así que desde aquí la consulta devolvería NULL y no false.
+
+-- ---------------------------------------------------------------------------
+\warn ''
+\warn '── RLS: aislamiento entre hogares ───────────────────────────'
 -- ---------------------------------------------------------------------------
 select pg_temp.act_as('22222222-2222-2222-2222-222222222222');
 select pg_temp.check(
@@ -312,8 +356,8 @@ end;
 $$;
 
 -- ---------------------------------------------------------------------------
-\echo ''
-\echo '── salir del hogar ──────────────────────────────────────────'
+\warn ''
+\warn '── salir del hogar ──────────────────────────────────────────'
 -- ---------------------------------------------------------------------------
 select pg_temp.act_as('11111111-1111-1111-1111-111111111111');
 do $$
@@ -354,10 +398,23 @@ select pg_temp.check(
   'y el hogar queda efectivamente borrado'
 );
 
-\echo ''
-\echo '════════════════════════════════════════════════════════════'
-\echo '  Todas las comprobaciones pasaron.'
-\echo '════════════════════════════════════════════════════════════'
-\echo ''
+-- ---------------------------------------------------------------------------
+\warn ''
+\warn '── configuración del bucket ─────────────────────────────────'
+-- ---------------------------------------------------------------------------
+select pg_temp.check(
+  (select public from storage.buckets where id = 'fotos'),
+  'el bucket de fotos es de lectura pública, para que el service worker pueda cachearlas'
+);
+select pg_temp.check(
+  (select allowed_mime_types from storage.buckets where id = 'fotos') @> array['image/webp'],
+  'acepta webp, que es a lo que comprime el cliente'
+);
+
+\warn ''
+\warn '════════════════════════════════════════════════════════════'
+\warn '  Todas las comprobaciones pasaron.'
+\warn '════════════════════════════════════════════════════════════'
+\warn ''
 
 rollback;

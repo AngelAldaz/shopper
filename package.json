@@ -14,7 +14,7 @@
     "db:start": "supabase start",
     "db:stop": "supabase stop",
     "db:reset": "supabase db reset",
-    "db:test": "docker exec -i supabase_db_shopper psql -U postgres -d postgres -v ON_ERROR_STOP=1 -q -f - < supabase/tests/schema_test.sql"
+    "db:test": "docker cp supabase/tests/schema_test.sql supabase_db_shopper:/tmp/schema_test.sql && docker exec supabase_db_shopper psql -U postgres -d postgres -v ON_ERROR_STOP=1 -q -f /tmp/schema_test.sql"
   },
   "dependencies": {
     "@fontsource-variable/fraunces": "^5.3.0",

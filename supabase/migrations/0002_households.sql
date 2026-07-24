@@ -159,3 +159,19 @@ create policy "miembros: veo a los de mis hogares"
 -- Tampoco hay INSERT/UPDATE/DELETE directos sobre household_members: unirse,
 -- salir, expulsar y transferir pasan por RPC. Si se pudiera insertar a mano,
 -- cualquiera podría meterse en un hogar ajeno escribiendo su id.
+
+-- ---------------------------------------------------------------------------
+-- Permisos de tabla.
+--
+-- NO son redundantes con RLS: son la capa de abajo. Supabase ya no concede
+-- automáticamente SELECT/INSERT/UPDATE a `authenticated` sobre las tablas
+-- nuevas del esquema public (los privilegios por omisión solo traen Dxtm), así
+-- que sin esto toda consulta responde "permission denied for table ..." aunque
+-- las políticas estén perfectas.
+--
+-- RLS decide QUÉ FILAS; el GRANT decide si la tabla existe siquiera para ese
+-- rol. Hacen falta las dos.
+-- ---------------------------------------------------------------------------
+grant select, update on public.profiles          to authenticated;
+grant select, update on public.households        to authenticated;
+grant select         on public.household_members to authenticated;

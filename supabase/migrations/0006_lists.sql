@@ -115,3 +115,7 @@ create policy "list_items: solo mi hogar" on public.list_items
   for all to authenticated
   using (public.is_household_member(household_id))
   with check (public.is_household_member(household_id));
+
+-- Sin DELETE, igual que el catálogo: todo borrado aquí es suave.
+grant select, insert, update on public.shopping_lists to authenticated;
+grant select, insert, update on public.list_items     to authenticated;
