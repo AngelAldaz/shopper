@@ -1,0 +1,58 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  # Permite relanzar el despliegue a mano desde la pestaña Actions, sin
+  # necesidad de inventar un commit vacío.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Si se empujan dos commits seguidos, que gane el último en vez de desplegar
+# los dos en carrera. `cancel-in-progress: false` deja terminar el que ya
+# estaba publicando, porque cancelar a media publicación deja Pages a medias.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          # Misma mayor que en local. Vite 8 exige >= 20.19 y con Node 20.17
+          # npm ni siquiera instala el binario nativo de rolldown.
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run build
+        env:
+          # Variables del repositorio (Settings → Secrets and variables →
+          # Actions → Variables), no secretos: la anon key de Supabase es
+          # pública por diseño y lo que protege los datos es RLS.
+          # La service_role key no entra aquí jamás.
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5
