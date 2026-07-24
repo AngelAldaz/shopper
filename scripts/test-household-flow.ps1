@@ -77,6 +77,58 @@ Rpc $beto 'join_household' (@{ p_code = $codigo } | ConvertTo-Json) | Out-Null
 Check ((Invoke-RestMethod "$API/rest/v1/stores?select=id" -Headers $beto).Count -eq 2) "Beto ve los supers de Ana al entrar"
 Check ((Miembros $ana $hogar).Count -eq 2) "el hogar tiene dos personas"
 
+Write-Host "`n── contrato del motor de sincronizacion ─────────────"
+# Las pruebas del motor usan un servidor falso; esto verifica lo que ese falso
+# NO puede verificar: que PostgREST acepte exactamente lo que le mandamos.
+
+# 1. Upsert con la lista blanca de columnas, tal cual la manda pushablePayload.
+$prodId = [guid]::NewGuid().ToString()
+$prod = @{
+  id = $prodId; household_id = $hogar; name = 'Huevo blanco'; brand = 'San Juan'
+  unit = 'pieza'; photo_path = $null; notes = $null; last_used_at = $null
+  created_at = '2026-07-24T10:00:00.000Z'; deleted_at = $null
+} | ConvertTo-Json
+$up = @{ Prefer = 'resolution=merge-duplicates,return=minimal' }
+Invoke-RestMethod "$API/rest/v1/products?on_conflict=id" -Method Post -Headers ($ana + $up) -Body $prod | Out-Null
+Check $true "el upsert acepta la lista blanca de columnas"
+
+# 2. Reenviar lo mismo no duplica: es la base de que reintentar sea seguro.
+Invoke-RestMethod "$API/rest/v1/products?on_conflict=id" -Method Post -Headers ($ana + $up) -Body $prod | Out-Null
+Check ((Invoke-RestMethod "$API/rest/v1/products?select=id&id=eq.$prodId" -Headers $ana).Count -eq 1) `
+  "reenviar el mismo upsert deja una sola fila"
+
+# 3. search_key es GENERATED ALWAYS: mandarla debe fallar. Si algun dia dejara
+#    de fallar, la lista blanca habria dejado de ser necesaria y querriamos
+#    enterarnos.
+$conGenerada = ($prod | ConvertFrom-Json)
+$conGenerada | Add-Member -NotePropertyName search_key -NotePropertyValue 'a-mano'
+try {
+  Invoke-RestMethod "$API/rest/v1/products?on_conflict=id" -Method Post -Headers ($ana + $up) -Body ($conGenerada | ConvertTo-Json)
+  Check $false "mandar search_key deberia ser rechazado"
+} catch {
+  Check $true "mandar una columna generada es rechazado (por eso hay lista blanca)"
+}
+
+# 4. El servidor pisa updated_at con SU reloj, que es el eje del delta.
+$guardado = (Invoke-RestMethod "$API/rest/v1/products?select=updated_at,created_by&id=eq.$prodId" -Headers $ana)[0]
+Check ($guardado.updated_at -gt '2026-07-24T10:00:00') "updated_at lo pone el servidor, no el cliente"
+Check ($null -ne $guardado.created_by) "created_by lo pone el trigger aunque no se envie"
+
+# 5. La consulta del delta: mayor que una marca ISO.
+$desde = '1970-01-01T00:00:00.000Z'
+$delta = Invoke-RestMethod "$API/rest/v1/products?select=id&updated_at=gt.$desde" -Headers $ana
+Check ($delta.Count -ge 1) "la consulta incremental por updated_at devuelve filas"
+$futuro = '2999-01-01T00:00:00.000Z'
+$vacio = Invoke-RestMethod "$API/rest/v1/products?select=id&updated_at=gt.$futuro" -Headers $ana
+Check ($vacio.Count -eq 0) "y no devuelve nada si ya estas al dia"
+
+# 6. Borrado suave por upsert, que es como lo manda la cola.
+$borrado = ($prod | ConvertFrom-Json)
+$borrado.deleted_at = '2026-07-24T12:00:00.000Z'
+Invoke-RestMethod "$API/rest/v1/products?on_conflict=id" -Method Post -Headers ($ana + $up) -Body ($borrado | ConvertTo-Json) | Out-Null
+$vivos = Invoke-RestMethod "$API/rest/v1/products?select=id&id=eq.$prodId&deleted_at=is.null" -Headers $ana
+Check ($vivos.Count -eq 0) "el borrado suave viaja como un upsert normal"
+
 Write-Host "`n── reglas de salida ─────────────────────────────────"
 try {
   Rpc $ana 'leave_household' (@{ p_household_id = $hogar } | ConvertTo-Json) | Out-Null

@@ -8,6 +8,9 @@ import { applyTheme, getThemePref, type ThemePref } from '@/lib/theme'
 import { supabase } from '@/lib/supabase'
 import { useSession } from '@/features/auth/SessionProvider'
 import { HouseholdSection } from '@/features/household/HouseholdSection'
+import { useSync } from '@/db/SyncProvider'
+import { wipeLocalMirror } from '@/db/dexie'
+import { resetSyncCursor } from '@/db/sync'
 
 const OPTIONS: { value: ThemePref; label: string; Icon: typeof Sun }[] = [
   { value: 'light', label: 'Claro', Icon: Sun },
@@ -17,11 +20,29 @@ const OPTIONS: { value: ThemePref; label: string; Icon: typeof Sun }[] = [
 
 export function MePage() {
   const { session } = useSession()
+  const { pending } = useSync()
   const [pref, setPref] = useState<ThemePref>(getThemePref)
 
   function choose(next: ThemePref) {
     setPref(next)
     applyTheme(next)
+  }
+
+  async function signOut() {
+    // Cerrar sesión borra el espejo local, así que lo que no haya subido se
+    // pierde. Avisar antes es la diferencia entre un despiste y perder lo que
+    // capturaste en el súper.
+    if (
+      pending > 0 &&
+      !confirm(
+        `Tienes ${pending} ${pending === 1 ? 'cambio' : 'cambios'} sin subir. Si cierras sesión ahora se perderán.`,
+      )
+    ) {
+      return
+    }
+    await supabase.auth.signOut()
+    await wipeLocalMirror()
+    await resetSyncCursor()
   }
 
   const name = session?.user.user_metadata?.['display_name'] as string | undefined
@@ -54,12 +75,7 @@ export function MePage() {
           </p>
         </Card>
 
-        <Button
-          variant="ghost"
-          block
-          icon={<LogOut size={17} />}
-          onClick={() => supabase.auth.signOut()}
-        >
+        <Button variant="ghost" block icon={<LogOut size={17} />} onClick={signOut}>
           Cerrar sesión
         </Button>
       </div>

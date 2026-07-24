@@ -1,6 +1,8 @@
 import { Outlet, Route, Routes } from 'react-router'
 import { TabBar } from '@/components/TabBar'
+import { SyncBadge } from '@/components/SyncBadge'
 import { Bow } from '@/components/ui/Bow'
+import { SyncProvider } from '@/db/SyncProvider'
 import { SessionProvider, useSession } from '@/features/auth/SessionProvider'
 import { AuthPage } from '@/features/auth/AuthPage'
 import { ConfirmEmailPage } from '@/features/auth/ConfirmEmailPage'
@@ -43,7 +45,13 @@ function HouseholdGate() {
   // Sin hogar no hay nada que enseñar: ni catálogo, ni supers, ni listas
   // pertenecen a nadie todavía.
   if (!household) return <OnboardingPage />
-  return <Outlet />
+  // El motor de sincronización va dentro del hogar porque necesita saber cuál
+  // es, tanto para el canal de realtime como para el espejo local.
+  return (
+    <SyncProvider householdId={household.id}>
+      <Outlet />
+    </SyncProvider>
+  )
 }
 
 function Shell() {
@@ -52,6 +60,7 @@ function Shell() {
       {/* El padding inferior deja hueco a la barra de pestañas más el inset del
           home indicator; sin él, el último elemento de cada lista queda tapado. */}
       <main className="safe-x mx-auto max-w-lg pb-[calc(4.5rem+env(safe-area-inset-bottom))]">
+        <SyncBadge />
         <Outlet />
       </main>
       <TabBar />

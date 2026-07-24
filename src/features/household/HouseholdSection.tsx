@@ -5,6 +5,8 @@ import { Card } from '@/components/ui/Card'
 import { Sheet } from '@/components/ui/Sheet'
 import { shareText } from '@/lib/share'
 import { supabase } from '@/lib/supabase'
+import { wipeLocalMirror } from '@/db/dexie'
+import { resetSyncCursor } from '@/db/sync'
 import { useSession } from '@/features/auth/SessionProvider'
 import { useHousehold } from './useHousehold'
 import { LeaveHouseholdSheet } from './LeaveHouseholdSheet'
@@ -214,9 +216,11 @@ export function HouseholdSection() {
         onClose={() => setLeaving(false)}
         onLeft={async () => {
           setLeaving(false)
-          // TODO(Fase 4): aquí hay que borrar además el espejo local de Dexie y
-          // el caché de fotos del service worker. Mientras no exista el espejo,
-          // refrescar basta: RLS ya cortó el acceso en el servidor.
+          // Imprescindible: este teléfono tiene una copia COMPLETA del hogar en
+          // IndexedDB. El servidor ya cortó el acceso, pero sin borrar el
+          // espejo se seguirían viendo los datos sin conexión para siempre.
+          await wipeLocalMirror()
+          await resetSyncCursor()
           await refresh()
         }}
       />
