@@ -1,53 +1,66 @@
 import { useEffect, useState } from 'react'
-import { useSearchParams } from 'react-router'
 import { CircleCheck, CircleX, Loader } from 'lucide-react'
 import type { EmailOtpType } from '@supabase/supabase-js'
 import { Card } from '@/components/ui/Card'
 import { supabase } from '@/lib/supabase'
+import { messages, parseConfirmResult } from './confirmResult'
 
 type Status = 'working' | 'ok' | 'fail'
 
 /**
  * Aterrizaje del correo de confirmación.
  *
- * Esta pantalla casi siempre se abre en **Safari, no en el PWA instalado**: en
- * iOS son dos almacenamientos distintos. Por eso se canjea un `token_hash` con
- * verifyOtp en lugar de usar el flujo con `code`, que necesita un verifier
- * guardado en el navegador donde empezó el registro y aquí no existiría.
- *
- * Después de confirmar, la persona vuelve al icono de la app e inicia sesión
- * con su correo y contraseña. La sesión que queda aquí, en Safari, da igual.
+ * Se abre casi siempre en **Safari, no en el PWA instalado**: en iOS son dos
+ * almacenamientos distintos. Funciona igual porque el flujo por omisión de
+ * Supabase es implícito — la cuenta ya quedó confirmada en el servidor antes
+ * de llegar aquí, así que no hace falta ningún dato guardado en este
+ * navegador. La lógica de lectura vive en confirmResult.ts, con pruebas.
  */
 export function ConfirmEmailPage() {
-  const [params] = useSearchParams()
   const [status, setStatus] = useState<Status>('working')
   const [message, setMessage] = useState('')
 
   useEffect(() => {
-    const tokenHash = params.get('token_hash')
-    const type = (params.get('type') ?? 'signup') as EmailOtpType
+    const result = parseConfirmResult(window.location.search, window.location.hash)
 
-    if (!tokenHash) {
+    // Los tokens no deben quedarse en la barra de direcciones ni en el
+    // historial de Safari.
+    if (window.location.hash) {
+      window.history.replaceState(null, '', window.location.pathname + window.location.search)
+    }
+
+    if (result.kind === 'ok') {
+      setStatus('ok')
+      return
+    }
+
+    if (result.kind === 'fail') {
       setStatus('fail')
-      setMessage('El enlace está incompleto. Ábrelo directamente desde el correo.')
+      setMessage(result.message)
+      return
+    }
+
+    if (result.kind === 'incomplete') {
+      setStatus('fail')
+      setMessage('Este enlace está incompleto. Ábrelo tocándolo directamente desde el correo.')
       return
     }
 
     supabase.auth
-      .verifyOtp({ token_hash: tokenHash, type })
+      .verifyOtp({ token_hash: result.tokenHash, type: result.type as EmailOtpType })
       .then(({ error }) => {
-        if (error) {
-          setStatus('fail')
-          setMessage(
-            error.message.toLowerCase().includes('expired')
-              ? 'Ese enlace ya caducó. Vuelve a la app e intenta registrarte de nuevo.'
-              : 'No pudimos confirmar la cuenta con ese enlace.',
-          )
-        } else {
+        if (!error) {
           setStatus('ok')
+          return
         }
+        setStatus('fail')
+        setMessage(
+          error.message.toLowerCase().includes('expired')
+            ? messages.REUSED_OR_EXPIRED
+            : messages.GENERIC,
+        )
       })
-  }, [params])
+  }, [])
 
   return (
     <div className="safe-x flex min-h-dvh items-center justify-center bg-bg px-5">

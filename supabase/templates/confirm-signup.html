@@ -1,6 +1,18 @@
 <!--
-  Plantilla "Confirm signup" de Supabase, en español.
-  Se pega en: Dashboard → Authentication → Emails → Confirm signup.
+  ⚠️ OPCIONAL — NO HACE FALTA PARA QUE LA APP FUNCIONE.
+
+  Supabase solo deja editar plantillas si configuras SMTP propio (Resend,
+  Postmark…). Sin eso, manda su plantilla en inglés, y está bien: se comprobó
+  contra el stack local que enlaza a /auth/v1/verify, que confirma la cuenta del
+  lado del servidor y redirige a /auth/confirm con el resultado en el fragmento
+  de la URL. Es flujo implícito, así que funciona en cualquier navegador — que
+  es justo lo que necesitábamos, porque el correo se abre en Safari y no en el
+  PWA instalado.
+
+  Este archivo queda aquí para el día que se configure SMTP y se quiera el
+  correo en español. ConfirmEmailPage ya acepta los dos formatos.
+
+  Se pegaría en: Dashboard → Authentication → Emails → Confirm signup.
 
   El enlace usa {{ .RedirectTo }} y {{ .TokenHash }} en lugar del
   {{ .ConfirmationURL }} por omisión, y no es un capricho:
