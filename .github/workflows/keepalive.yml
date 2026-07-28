@@ -1,0 +1,37 @@
+name: Keepalive
+
+# El plan gratis de Supabase pausa el proyecto tras 1 semana sin actividad, y
+# reactivarlo a mano tarda y da errores raros. Una petición de lectura cada 3
+# días lo mantiene despierto. Es de solo lectura y la anon key es pública por
+# diseño, así que no expone nada.
+on:
+  schedule:
+    - cron: '17 6 */3 * *' # cada 3 días, 06:17 UTC (una hora rara evita la
+                            # cola de tareas de medianoche de GitHub)
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Tocar la API de Supabase
+        env:
+          URL: ${{ vars.VITE_SUPABASE_URL }}
+          KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$URL" ] || [ -z "$KEY" ]; then
+            echo "Faltan las variables del repositorio. Nada que hacer."
+            exit 0
+          fi
+          # HEAD a una tabla real: cuenta como actividad de base de datos, que es
+          # lo que Supabase mira. Un 200 o un 401 sirven igual — ambos prueban
+          # que el proyecto respondió; lo único que se quiere evitar es que esté
+          # dormido y no conteste nada.
+          code=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "apikey: $KEY" \
+            -I "$URL/rest/v1/households?select=id&limit=1")
+          echo "Supabase respondió $code"
+          if [ "$code" = "000" ]; then
+            echo "Sin respuesta: el proyecto podría estar pausado."
+            exit 1
+          fi

@@ -1,9 +1,11 @@
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
-import { ChevronLeft, Plus, ShoppingCart } from 'lucide-react'
+import { ChevronLeft, Plus, Share2, ShoppingCart } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Fab } from '@/components/ui/Fab'
 import { approx } from '@/lib/money'
+import { shareText } from '@/lib/share'
+import { formatListForShare } from './shareList'
 import { saveRow } from '@/db/mutate'
 import { useListItems, useList } from '@/db/lists'
 import { useHousehold } from '@/features/household/useHousehold'
@@ -77,6 +79,16 @@ export function ListDetailPage() {
           <ChevronLeft size={24} />
         </button>
         <h1 className="min-w-0 flex-1 truncate text-xl font-semibold">{list.name}</h1>
+        {items.length > 0 && (
+          <button
+            type="button"
+            onClick={() => void shareText(formatListForShare(list.name, items), list.name)}
+            aria-label="Compartir lista"
+            className="grid size-11 shrink-0 place-items-center rounded-full text-muted active:bg-surface-2"
+          >
+            <Share2 size={20} />
+          </button>
+        )}
       </header>
 
       {/* Total sticky: la cifra que importa siempre a la vista, aunque scrollees. */}

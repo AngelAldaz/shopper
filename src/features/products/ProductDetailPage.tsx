@@ -8,6 +8,7 @@ import { useProduct, useProductPrices, useStores } from '@/db/queries'
 import { useHousehold } from '@/features/household/useHousehold'
 import { PriceEditorSheet } from './PriceEditorSheet'
 import { ProductFormSheet } from './ProductFormSheet'
+import { PriceHistory } from './PriceHistory'
 import { relativeDate } from '@/lib/dates'
 import type { ProductPrice } from '@/db/schema'
 
@@ -141,6 +142,8 @@ export function ProductDetailPage() {
           </ul>
         )}
       </div>
+
+      <PriceHistory productId={product.id} />
 
       <ProductFormSheet
         open={editingProduct}
