@@ -186,4 +186,8 @@ origen en Settings → Pages (Source: None → GitHub Actions).
 - [x] **Fase 4** — Motor local-first (Dexie + sync)
 - [x] **Fase 5** — Supers, catálogo, fotos y precios *(verificado en navegador)*
 - [x] **Fase 6** — Listas y mejor precio *(verificado en navegador)*
-- [ ] Fase 7 — Historial de precios, compartir y keepalive
+- [x] **Fase 7** — Historial de precios, compartir y keepalive *(verificado en navegador)*
+
+**La app está completa.** Falta solo un paso manual del usuario: activar el
+workflow *Keepalive* (Actions → Keepalive → Enable), y opcionalmente apagar los
+registros nuevos una vez creadas las cuentas.
