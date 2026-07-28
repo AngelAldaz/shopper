@@ -1,42 +1,83 @@
-import { Plus } from 'lucide-react'
+import { useState } from 'react'
+import { Plus, Store as StoreIcon } from 'lucide-react'
 import { PageHeader } from '@/components/PageHeader'
-import { Card } from '@/components/ui/Card'
+import { EmptyState } from '@/components/ui/EmptyState'
 import { Fab } from '@/components/ui/Fab'
-
-/** TEMPORAL (Fase 0): supers de muestra. Se sustituyen en la Fase 5. */
-const DEMO = [
-  { id: '1', name: 'Walmart', color: '#2E77BB', wins: 12 },
-  { id: '2', name: 'Soriana', color: '#D94F4F', wins: 8 },
-  { id: '3', name: 'Bodega Aurrerá', color: '#E8A33D', wins: 5 },
-  { id: '4', name: 'Chedraui', color: '#E8623D', wins: 3 },
-  { id: '5', name: 'La Comer', color: '#7C5CD6', wins: 2 },
-  { id: '6', name: 'Mercado', color: '#2E8B6B', wins: 6 },
-]
+import { Button } from '@/components/ui/Button'
+import { useStores, useStoreWinCounts } from '@/db/queries'
+import { useHousehold } from '@/features/household/useHousehold'
+import { StoreFormSheet } from './StoreFormSheet'
+import type { Store } from '@/db/schema'
 
 export function StoresPage() {
+  const { household } = useHousehold()
+  const stores = useStores()
+  const wins = useStoreWinCounts()
+  const [editing, setEditing] = useState<Store | null>(null)
+  const [creating, setCreating] = useState(false)
+
+  if (!household) return null
+
   return (
     <>
-      <PageHeader title="Mis supers" subtitle="Dónde compras normalmente" />
+      <PageHeader
+        title="Mis supers"
+        subtitle={stores.length ? `${stores.length} tiendas` : 'Dónde compras'}
+      />
 
-      <ul className="flex flex-col gap-2.5 px-5">
-        {DEMO.map((s) => (
-          <li key={s.id}>
-            <Card className="flex items-center gap-3 p-3">
-              <span
-                className="size-11 shrink-0 rounded-full"
-                style={{ backgroundColor: s.color }}
-                aria-hidden="true"
-              />
-              <span className="min-w-0 flex-1 truncate font-semibold">{s.name}</span>
-              <span className="shrink-0 rounded-full bg-success-soft px-3 py-1 text-sm font-semibold text-success">
-                {s.wins} más barato
-              </span>
-            </Card>
-          </li>
-        ))}
-      </ul>
+      {stores.length === 0 ? (
+        <EmptyState
+          title="Aún no tienes supers"
+          description="Agrega las tiendas donde haces el súper para empezar a comparar precios."
+          action={
+            <Button icon={<Plus size={18} />} onClick={() => setCreating(true)}>
+              Agregar súper
+            </Button>
+          }
+        />
+      ) : (
+        <ul className="flex flex-col gap-2.5 px-5">
+          {stores.map((s) => {
+            const n = wins[s.id] ?? 0
+            return (
+              <li key={s.id}>
+                <button
+                  type="button"
+                  onClick={() => setEditing(s)}
+                  className="flex w-full items-center gap-3 rounded-card border border-border bg-surface p-3 text-left shadow-sweet active:bg-surface-2"
+                >
+                  <span
+                    className="grid size-11 shrink-0 place-items-center rounded-full text-white"
+                    style={{ backgroundColor: s.color }}
+                  >
+                    <StoreIcon size={20} />
+                  </span>
+                  <span className="min-w-0 flex-1 truncate font-semibold">{s.name}</span>
+                  {n > 0 && (
+                    <span className="shrink-0 rounded-full bg-success-soft px-3 py-1 text-sm font-semibold text-success">
+                      {n} {n === 1 ? 'más barato' : 'más baratos'}
+                    </span>
+                  )}
+                </button>
+              </li>
+            )
+          })}
+        </ul>
+      )}
 
-      <Fab icon={<Plus size={26} />} label="Nuevo súper" />
+      <Fab icon={<Plus size={26} />} label="Nuevo súper" onClick={() => setCreating(true)} />
+
+      <StoreFormSheet
+        open={creating}
+        onClose={() => setCreating(false)}
+        householdId={household.id}
+      />
+      <StoreFormSheet
+        open={editing !== null}
+        onClose={() => setEditing(null)}
+        householdId={household.id}
+        store={editing}
+      />
     </>
   )
 }

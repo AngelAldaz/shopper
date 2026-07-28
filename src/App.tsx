@@ -10,6 +10,7 @@ import { HouseholdProvider, useHousehold } from '@/features/household/useHouseho
 import { OnboardingPage } from '@/features/household/OnboardingPage'
 import { ListsPage } from '@/features/lists/ListsPage'
 import { CatalogPage } from '@/features/products/CatalogPage'
+import { ProductDetailPage } from '@/features/products/ProductDetailPage'
 import { StoresPage } from '@/features/stores/StoresPage'
 import { MePage } from '@/features/me/MePage'
 
@@ -81,6 +82,7 @@ export function App() {
             <Route element={<Shell />}>
               <Route index element={<ListsPage />} />
               <Route path="catalogo" element={<CatalogPage />} />
+              <Route path="producto/:id" element={<ProductDetailPage />} />
               <Route path="supers" element={<StoresPage />} />
               <Route path="yo" element={<MePage />} />
             </Route>
