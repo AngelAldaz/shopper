@@ -9,6 +9,7 @@ import { ConfirmEmailPage } from '@/features/auth/ConfirmEmailPage'
 import { HouseholdProvider, useHousehold } from '@/features/household/useHousehold'
 import { OnboardingPage } from '@/features/household/OnboardingPage'
 import { ListsPage } from '@/features/lists/ListsPage'
+import { ListDetailPage } from '@/features/lists/ListDetailPage'
 import { CatalogPage } from '@/features/products/CatalogPage'
 import { ProductDetailPage } from '@/features/products/ProductDetailPage'
 import { StoresPage } from '@/features/stores/StoresPage'
@@ -81,6 +82,7 @@ export function App() {
           <Route element={<WithHousehold />}>
             <Route element={<Shell />}>
               <Route index element={<ListsPage />} />
+              <Route path="listas/:id" element={<ListDetailPage />} />
               <Route path="catalogo" element={<CatalogPage />} />
               <Route path="producto/:id" element={<ProductDetailPage />} />
               <Route path="supers" element={<StoresPage />} />

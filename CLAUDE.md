@@ -127,6 +127,14 @@ Y hay **dos vías de acceso distintas** que hay que cerrar por separado:
 Al crear una función nueva, revócala de `PUBLIC` y concédela solo a quien la
 necesite. Las de trigger no se conceden a nadie: las invoca el motor.
 
+### Áreas seguras de iOS: no combinar `safe-*` con `pt-*`/`pb-*`
+Las utilidades `safe-top`/`safe-bottom` (en `theme.css`) escriben el padding
+**entero**. Si en el mismo elemento pones además `pt-*`/`pb-*`, las dos reglas
+se pisan y gana una sola: el resultado es contenido pegado al borde o tapado por
+la barra. Cuando hace falta inset **más** aire propio, súmalos en un único valor:
+`pb-[calc(4.5rem+env(safe-area-inset-bottom))]`. Este bug ya se coló en el pie de
+`Sheet`, en `PageHeader` y en la barra "Comprando" de las listas.
+
 ### Las fuentes se declaran a mano
 `src/styles/theme.css` escribe sus propios `@font-face` en vez de importar el
 `index.css` de fontsource. No es purismo:
@@ -176,6 +184,6 @@ origen en Settings → Pages (Source: None → GitHub Actions).
 - [x] **Fase 2** — Supabase: esquema, RLS y sesiones *(producción verificada: 0 fugas)*
 - [x] **Fase 3** — Hogar compartido
 - [x] **Fase 4** — Motor local-first (Dexie + sync)
-- [ ] Fase 5 — Supers, catálogo, fotos y precios
-- [ ] Fase 6 — Listas y mejor precio
+- [x] **Fase 5** — Supers, catálogo, fotos y precios *(verificado en navegador)*
+- [x] **Fase 6** — Listas y mejor precio *(verificado en navegador)*
 - [ ] Fase 7 — Historial de precios, compartir y keepalive
