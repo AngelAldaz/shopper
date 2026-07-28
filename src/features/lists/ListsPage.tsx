@@ -5,9 +5,11 @@ import { PageHeader } from '@/components/PageHeader'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Fab } from '@/components/ui/Fab'
 import { Button } from '@/components/ui/Button'
+import { SwipeToDelete } from '@/components/ui/SwipeToDelete'
 import { approx } from '@/lib/money'
 import { useLists } from '@/db/lists'
 import { useHousehold } from '@/features/household/useHousehold'
+import { softDelete } from '@/db/mutate'
 import { NewListSheet } from './NewListSheet'
 
 export function ListsPage() {
@@ -41,10 +43,14 @@ export function ListsPage() {
             const pct = l.total ? Math.round((l.checked / l.total) * 100) : 0
             return (
               <li key={l.id}>
+                <SwipeToDelete
+                  className="shadow-sweet"
+                  onDelete={() => void softDelete('shopping_lists', l.id)}
+                >
                 <button
                   type="button"
                   onClick={() => navigate(`/listas/${l.id}`)}
-                  className="w-full rounded-card border border-border bg-surface p-4 text-left shadow-sweet active:bg-surface-2"
+                  className="w-full border border-border bg-surface p-4 text-left active:bg-surface-2"
                 >
                   <div className="flex items-baseline justify-between gap-3">
                     <h2 className="min-w-0 flex-1 truncate text-lg font-semibold">{l.name}</h2>
@@ -77,6 +83,7 @@ export function ListsPage() {
                     </div>
                   )}
                 </button>
+                </SwipeToDelete>
               </li>
             )
           })}
