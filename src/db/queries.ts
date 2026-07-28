@@ -14,9 +14,14 @@ import type { Product, ProductPrice, Store } from './schema'
  */
 
 export function useStores(): Store[] {
-  return (
-    useLiveQuery(() => db.stores.orderBy('name').toArray(), [], []) ?? []
-  )
+  // sortBy y no orderBy('name'): orderBy exige que la columna esté indexada, y
+  // `name` no lo está (indexar algo que solo se ordena, sobre un puñado de
+  // filas, encarece cada escritura sin ganar nada). sortBy ordena en JS.
+  return useLiveQuery(() => db.stores.toArray().then(sortByName), [], []) ?? []
+}
+
+function sortByName<T extends { name: string }>(rows: T[]): T[] {
+  return rows.sort((a, b) => a.name.localeCompare(b.name, 'es'))
 }
 
 export function useStore(id: string | undefined): Store | undefined {
