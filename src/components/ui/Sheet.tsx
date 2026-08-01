@@ -1,6 +1,7 @@
 import { useEffect, useRef, type ReactNode } from 'react'
 import { X } from 'lucide-react'
 import { cn } from '@/lib/cn'
+import { useKeyboardInset } from '@/hooks/useKeyboardInset'
 
 interface Props {
   open: boolean
@@ -37,6 +38,7 @@ export function Sheet({ open, onClose, title, footer, children, className }: Pro
 
 function SheetPanel({ onClose, title, footer, children, className }: Omit<Props, 'open'>) {
   const ref = useRef<HTMLDialogElement>(null)
+  const { inset, height } = useKeyboardInset()
 
   useEffect(() => {
     // showModal() es lo que promueve el diálogo a la capa superior: por encima
@@ -63,18 +65,26 @@ function SheetPanel({ onClose, title, footer, children, className }: Omit<Props,
       onClick={(e) => {
         if (e.target === ref.current) onClose()
       }}
+      // El padding inferior levanta la hoja por encima del teclado: sin esto,
+      // en iOS el teclado tapa la parte baja del contenido —justo donde vive
+      // el "+ Crear" del typeahead—. inset lo calcula useKeyboardInset con la
+      // VisualViewport API.
+      style={{ paddingBottom: inset || undefined }}
       className={cn(
         // `open:flex` y no `flex` a secas: así el display solo se aplica cuando
         // el diálogo está realmente abierto y nunca compite con la regla del
         // navegador para el estado cerrado.
         'fixed inset-0 m-0 hidden h-full max-h-full w-full max-w-full open:flex',
-        'items-end justify-center bg-transparent p-0 text-text',
+        'items-end justify-center bg-transparent p-0 text-text transition-[padding] duration-150',
         'backdrop:bg-black/40 backdrop:backdrop-blur-[2px]',
       )}
     >
       <div
+        // El alto máximo se acota al visual viewport (lo que de verdad se ve
+        // por encima del teclado), sin pasar de 88dvh cuando no hay teclado.
+        style={{ maxHeight: `min(88dvh, ${height - 12}px)` }}
         className={cn(
-          'animate-sheet flex max-h-[88dvh] w-full max-w-lg flex-col',
+          'animate-sheet flex w-full max-w-lg flex-col',
           'rounded-t-sheet border-t border-border bg-surface shadow-sheet',
           className,
         )}

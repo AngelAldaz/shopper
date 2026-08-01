@@ -127,6 +127,15 @@ Y hay **dos vías de acceso distintas** que hay que cerrar por separado:
 Al crear una función nueva, revócala de `PUBLIC` y concédela solo a quien la
 necesite. Las de trigger no se conceden a nadie: las invoca el motor.
 
+### El teclado de iOS y los bottom sheets
+El teclado en pantalla encoge el *visual viewport* pero no el *layout viewport*,
+así que un sheet anclado abajo se queda con su base **detrás del teclado** —y con
+ella el `+ Crear` del typeahead—. `Sheet` se levanta usando `useKeyboardInset`
+(VisualViewport API): `paddingBottom = inset` en el `<dialog>` sube la hoja, y el
+`max-height` se acota al alto visible. No se puede reproducir en Chrome de
+escritorio (no hay teclado); la parte de cálculo es pura y está en
+`useKeyboardInset.test.ts`.
+
 ### Áreas seguras de iOS: no combinar `safe-*` con `pt-*`/`pb-*`
 Las utilidades `safe-top`/`safe-bottom` (en `theme.css`) escriben el padding
 **entero**. Si en el mismo elemento pones además `pt-*`/`pb-*`, las dos reglas
