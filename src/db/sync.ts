@@ -1,6 +1,6 @@
 import { db, getMeta, setMeta } from './dexie'
 import { bumpTries, markFailed, markSent, pendingOps } from './outbox'
-import { isPermanent, supabaseBackend, type SyncBackend } from './backend'
+import { isNetworkError, isPermanent, supabaseBackend, type SyncBackend } from './backend'
 import { flushPhotos, type PhotoFlushResult } from './photos'
 import { PULL_ENTITIES, type PullEntity } from './schema'
 
@@ -63,13 +63,24 @@ export async function syncPush(backend: SyncBackend = supabaseBackend): Promise<
     }
 
     if (isPermanent(error)) {
-      // Se aparta y se sigue: un cambio inválido no puede bloquear para siempre
-      // todo lo que viene detrás.
+      // Un cambio que el servidor rechaza (RLS, restricción) se aparta y se
+      // sigue: no puede bloquear para siempre todo lo que viene detrás.
       await markFailed(op.seq, error.message)
       failed++
       continue
     }
 
+    if (isNetworkError(error)) {
+      // Sin señal: el cambio es válido y subirá al reconectar. NO cuenta como
+      // intento fallido, o unos minutos de mala señal marcarían como perdido
+      // algo bueno. Paramos aquí; se reintenta en el próximo online /
+      // visibilitychange / apertura de la app.
+      return { sent, failed, interrupted: true }
+    }
+
+    // El servidor respondió con un error transitorio (5xx). Ese sí cuenta, con
+    // tope, por si algo está de verdad mal y no debe atorar al resto para
+    // siempre.
     const tries = await bumpTries(op.seq, error.message)
     if (tries >= 5) {
       failed++

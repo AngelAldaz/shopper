@@ -209,17 +209,59 @@ describe('subida', () => {
     expect(backend.recibido).toHaveLength(0)
   })
 
-  it('lo que no avanza tras varios intentos deja de bloquear', async () => {
+  it('un error DEL SERVIDOR que se repite deja de bloquear tras varios intentos', async () => {
     await enqueue('products', producto('p1', 'Terco'))
     await enqueue('products', producto('p2', 'Bueno'))
 
     const backend = new FakeBackend()
-    backend.fallo = { error: { message: 'Failed to fetch' }, veces: 99 }
+    // 5xx CON código: el servidor respondió, pero mal. Eso sí cuenta hacia el
+    // tope, por si algo está de verdad roto.
+    backend.fallo = { error: { message: 'server error', code: '500' }, veces: 99 }
     for (let i = 0; i < 5; i++) await syncPush(backend)
 
     expect(await countFailed()).toBe(1)
     const restantes = await pendingOps()
     expect(restantes.map((o) => o.row_id)).toEqual(['p2'])
+  })
+
+  it('sin señal NUNCA marca un cambio como fallido, por muchos intentos que pase', async () => {
+    // El bug reportado: unos minutos de mala señal en el súper marcaban como
+    // "no se guardó" algo perfectamente válido. Un error de red no trae código
+    // (el fetch ni llegó al servidor), así que no debe contar como fallo.
+    await enqueue('products', producto('p1', 'Huevo'))
+
+    const backend = new FakeBackend()
+    backend.fallo = { error: { message: 'Failed to fetch' }, veces: 99 }
+    for (let i = 0; i < 10; i++) await syncPush(backend)
+
+    expect(await countFailed()).toBe(0)
+    expect(await countPending()).toBe(1) // sigue esperando, con calma
+
+    // Y en cuanto vuelve la red, sube.
+    backend.fallo = null
+    await syncPush(backend)
+    expect(await countPending()).toBe(0)
+    expect(backend.tablas['products']?.size).toBe(1)
+  })
+
+  it('re-editar una fila sana un cambio que había quedado fallido', async () => {
+    // Un cambio se marca fallido (RLS temporal, lo que sea). Antes, volver a
+    // tocar esa fila creaba una op nueva y dejaba la fallida conviviendo, así
+    // que el banner "no se guardó" no se iba nunca.
+    await enqueue('products', producto('p1', 'Huevo'))
+    const backend = new FakeBackend()
+    backend.fallo = { error: { message: 'RLS', code: '42501' }, veces: 1 }
+    await syncPush(backend)
+    expect(await countFailed()).toBe(1)
+
+    // El usuario corrige el producto: al re-encolarlo, el fallido se sana.
+    await enqueue('products', producto('p1', 'Huevo blanco'))
+    expect(await countFailed()).toBe(0)
+    expect(await countPending()).toBe(1)
+
+    await syncPush(backend)
+    expect(await countPending()).toBe(0)
+    expect(backend.tablas['products']?.get('p1')?.['name']).toBe('Huevo blanco')
   })
 })
 

@@ -73,3 +73,16 @@ const PERMANENT_CODES = new Set([
 export function isPermanent(error: SyncError): boolean {
   return Boolean(error.code && PERMANENT_CODES.has(error.code))
 }
+
+/**
+ * ¿La petición ni siquiera llegó a tener respuesta del servidor?
+ *
+ * Las respuestas de PostgREST SIEMPRE traen un `code`. Su ausencia significa que
+ * el fetch falló antes de recibir nada: sin señal, DNS, timeout, CORS. Eso no es
+ * un cambio inválido, es falta de red, y no debe contar como intento fallido —si
+ * contara, unos minutos de mala señal en el súper marcarían como "no se guardó"
+ * algo perfectamente bueno, que era justo el bug reportado.
+ */
+export function isNetworkError(error: SyncError): boolean {
+  return !error.code
+}

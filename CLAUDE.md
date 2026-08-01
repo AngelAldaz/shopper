@@ -81,6 +81,19 @@ Al añadir una columna nueva a una tabla sincronizable, **añádela a
 blanca a propósito: `products.search_key` es `GENERATED ALWAYS` y mandarla hace
 fallar el insert entero (verificado contra PostgREST en el script de integración).
 
+### Sin señal ≠ cambio fallido
+Un error de red **no tiene `code`** (el fetch ni llegó al servidor); las
+respuestas de PostgREST siempre lo traen. Por eso `isNetworkError` = `!code`, y
+en `syncPush` los errores de red **no cuentan** hacia el tope de reintentos: el
+cambio es válido y sube al reconectar. Solo los rechazos reales del servidor
+(4xx permanentes → fallido inmediato; 5xx con code → con tope) marcan un cambio
+como "no se guardó". El bug era contar la falta de señal como fallo: unos
+minutos de mala señal en el súper marcaban como perdido algo bueno.
+
+Consecuencias: `enqueue` sana un op `failed` al re-editar la fila (y deduplica);
+`SyncProvider` reintenta los fallidos al abrir la app; el banner abre un detalle
+con el error real y un botón *Descartar*.
+
 ### No hay TanStack Query
 Sobra en una app local-first: el estado del servidor vive en IndexedDB y Dexie ya
 es reactivo. Añadir una capa de caché sobre otra capa de caché solo crea dos

@@ -26,14 +26,23 @@ export async function enqueue(
   const payload = pushablePayload(entity, row)
 
   await db.transaction('rw', db.outbox, async () => {
-    const existing = await db.outbox
-      .where('[entity+row_id]')
-      .equals([entity, row.id])
-      .filter((op) => op.status === 'pending')
-      .first()
+    // Se buscan TODAS las ops de esta fila, sin importar su estado. Reusar la
+    // más antigua conserva el orden de dependencias, y de paso SANA una que se
+    // hubiera quedado en `failed`: volver a tocar la fila la reintenta con el
+    // contenido nuevo. Antes solo se miraban las `pending`, así que un `failed`
+    // quedaba conviviendo con una nueva `pending` y el banner "no se guardó" no
+    // se iba nunca aunque la fila ya estuviera bien.
+    const ops = await db.outbox.where('[entity+row_id]').equals([entity, row.id]).sortBy('seq')
 
-    if (existing?.seq !== undefined) {
-      await db.outbox.update(existing.seq, { payload, tries: 0, error: null })
+    if (ops.length > 0) {
+      const keep = ops[0]!
+      if (keep.seq !== undefined) {
+        await db.outbox.update(keep.seq, { payload, status: 'pending', tries: 0, error: null })
+      }
+      // Cualquier duplicado (p. ej. un failed + un pending viejos) se colapsa.
+      for (const dup of ops.slice(1)) {
+        if (dup.seq !== undefined) await db.outbox.delete(dup.seq)
+      }
       return
     }
 
@@ -96,5 +105,19 @@ export async function retryFailed(): Promise<void> {
         ? Promise.resolve()
         : db.outbox.update(op.seq, { status: 'pending', tries: 0, error: null }),
     ),
+  )
+}
+
+/**
+ * Descartar los cambios que no se pudieron guardar.
+ *
+ * Escotilla de salida cuando un cambio está de verdad roto (p. ej. quedó de una
+ * versión vieja) y solo hay que quitárselo de encima. La copia local no se
+ * toca; solo se deja de intentar subir ese cambio.
+ */
+export async function discardFailed(): Promise<void> {
+  const ops = await failedOps()
+  await Promise.all(
+    ops.map((op) => (op.seq === undefined ? Promise.resolve() : db.outbox.delete(op.seq))),
   )
 }

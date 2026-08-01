@@ -9,22 +9,31 @@ import {
 } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from './dexie'
-import { countFailed, countPending, retryFailed as retryFailedOps } from './outbox'
+import {
+  countFailed,
+  countPending,
+  discardFailed as discardFailedOps,
+  failedOps,
+  retryFailed as retryFailedOps,
+} from './outbox'
 import { setMutationListener } from './mutate'
 import { syncNow } from './sync'
 import { supabase } from '@/lib/supabase'
 import { useOnline } from '@/hooks/useOnline'
-import { PUSH_ENTITIES } from './schema'
+import { PUSH_ENTITIES, type OutboxOp } from './schema'
 
 interface SyncState {
   online: boolean
   syncing: boolean
   pending: number
   failed: number
+  /** Detalle de los cambios que no se pudieron guardar, para inspeccionarlos. */
+  failedList: OutboxOp[]
   lastSyncedAt: string | null
   error: string | null
   sync: () => void
   retryFailed: () => Promise<void>
+  discardFailed: () => Promise<void>
 }
 
 const Ctx = createContext<SyncState>({
@@ -32,10 +41,12 @@ const Ctx = createContext<SyncState>({
   syncing: false,
   pending: 0,
   failed: 0,
+  failedList: [],
   lastSyncedAt: null,
   error: null,
   sync: () => {},
   retryFailed: async () => {},
+  discardFailed: async () => {},
 })
 
 /** Se agrupan los cambios seguidos: tachar cinco productos es UNA subida. */
@@ -57,6 +68,7 @@ export function SyncProvider({
   // en cuanto se encola o se sube algo, sin avisos manuales.
   const pending = useLiveQuery(() => countPending(), [], 0)
   const failed = useLiveQuery(() => countFailed(), [], 0)
+  const failedList = useLiveQuery(() => failedOps(), [], [])
 
   const running = useRef(false)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -91,7 +103,11 @@ export function SyncProvider({
   }, [schedule])
 
   useEffect(() => {
-    void run()
+    // Al abrir la app se les da otra oportunidad a los cambios que hubieran
+    // quedado marcados como fallidos —casi siempre por falta de señal, no
+    // porque sean inválidos—. Los que de verdad rechace el servidor volverán a
+    // marcarse solos; los buenos suben o se quedan pendientes con calma.
+    void retryFailedOps().then(() => run())
   }, [run, householdId])
 
   // iOS no tiene Background Sync, así que estos tres eventos son TODA la
@@ -135,6 +151,10 @@ export function SyncProvider({
     await run()
   }, [run])
 
+  const discardFailed = useCallback(async () => {
+    await discardFailedOps()
+  }, [])
+
   return (
     <Ctx
       value={{
@@ -142,10 +162,12 @@ export function SyncProvider({
         syncing,
         pending: pending ?? 0,
         failed: failed ?? 0,
+        failedList: failedList ?? [],
         lastSyncedAt,
         error,
         sync: () => void run(),
         retryFailed,
+        discardFailed,
       }}
     >
       {children}
