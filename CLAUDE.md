@@ -158,17 +158,18 @@ la barra. Cuando hace falta inset **más** aire propio, súmalos en un único va
 `Sheet`, en `PageHeader` y en la barra "Comprando" de las listas.
 
 ### Las fuentes se declaran a mano
-`src/styles/theme.css` escribe sus propios `@font-face` en vez de importar el
-`index.css` de fontsource. No es purismo:
+`src/styles/theme.css` escribe sus propios `@font-face` (solo el subconjunto
+latino, que cubre el español) en vez de importar el `index.css` de fontsource,
+que arrastra latin-ext y vietnamita.
 
-- Ese `index.css` arrastra los subconjuntos cirílico, vietnamita y latin-ext
-  (~143 KB de precaché tirados). El español completo cabe en el latino.
-- Y carga el archivo `wght`, que **solo expone el eje de peso**: con él,
-  `font-variation-settings: 'SOFT'` se ignora sin avisar y Fraunces se ve como
-  una serif de periódico. El archivo `soft` sí lo expone.
+- **Títulos: Lilita One** (`--font-display`), display gruesa y redonda.
+- **Todo lo demás: La Belle Aurore** (`--font-sans`), cursiva fina, elección
+  estética del usuario para el cuerpo entero (precios, campos incluidos).
 
-Si algún día los títulos "se ven raros", mira primero qué archivo de Fraunces
-se está cargando.
+Las dos son **estáticas de un solo peso** (no variables), así que `font-bold`/
+`font-semibold` no cambian el grosor: la jerarquía va por tamaño y color. `body`
+lleva `font-synthesis: none` para que el navegador no invente una negrita falsa
+que sobre una cursiva rompe los trazos.
 
 ### Fotos detrás de un adaptador
 Todo pasa por `src/lib/photos.ts` (`upload` · `publicUrl` · `remove`). Hoy es

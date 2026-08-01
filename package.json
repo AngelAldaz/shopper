@@ -19,8 +19,8 @@
     "db:test": "docker cp supabase/tests/schema_test.sql supabase_db_shopper:/tmp/schema_test.sql && docker exec supabase_db_shopper psql -U postgres -d postgres -v ON_ERROR_STOP=1 -q -f /tmp/schema_test.sql"
   },
   "dependencies": {
-    "@fontsource-variable/fraunces": "^5.3.0",
-    "@fontsource-variable/nunito": "^5.3.0",
+    "@fontsource/la-belle-aurore": "^5.3.0",
+    "@fontsource/lilita-one": "^5.3.0",
     "@supabase/supabase-js": "^2.110.8",
     "browser-image-compression": "^2.0.2",
     "clsx": "^2.1.1",

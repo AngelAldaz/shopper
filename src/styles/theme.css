@@ -1,31 +1,28 @@
 @import 'tailwindcss';
 
-/* Las fuentes se declaran a mano en lugar de importar el index.css de
-   fontsource por dos razones concretas:
+/* Las fuentes se declaran a mano y no se importa el index.css de fontsource:
+   ese arrastra los subconjuntos latin-ext y vietnamita, que no usamos. El
+   español entero (á é í ó ú ü ñ) cabe en el subconjunto latino.
 
-   1. Ese index.css trae los subconjuntos cirílico, vietnamita y latin-ext, que
-      no usamos: ~143 KB de precaché tirados en un PWA que se instala por datos
-      móviles. El español entero (á é í ó ú ü ñ) cabe en el subconjunto latino.
-   2. Trae el archivo `wght`, que SOLO expone el eje de peso. Con él,
-      `font-variation-settings: 'SOFT' …` se ignora en silencio y Fraunces se ve
-      como una serif de periódico en vez de la versión redondeada y dulce.
-      El archivo `soft` sí expone el eje SOFT. */
+   Ambas son estáticas de un solo peso (400): ni La Belle Aurore ni Lilita One
+   son variables. Por eso body lleva `font-synthesis: none` (más abajo): sobre
+   una cursiva, el "negrita falsa" que inventa el navegador para `font-bold`
+   rompe los trazos. La jerarquía se hace con tamaño y color, no con peso. */
 @font-face {
-  font-family: 'Fraunces Variable';
+  font-family: 'Lilita One';
   font-style: normal;
   font-display: swap;
-  font-weight: 100 900;
-  src: url('@fontsource-variable/fraunces/files/fraunces-latin-soft-normal.woff2')
-    format('woff2-variations');
+  font-weight: 400;
+  src: url('@fontsource/lilita-one/files/lilita-one-latin-400-normal.woff2') format('woff2');
 }
 
 @font-face {
-  font-family: 'Nunito Variable';
+  font-family: 'La Belle Aurore';
   font-style: normal;
   font-display: swap;
-  font-weight: 200 1000;
-  src: url('@fontsource-variable/nunito/files/nunito-latin-wght-normal.woff2')
-    format('woff2-variations');
+  font-weight: 400;
+  src: url('@fontsource/la-belle-aurore/files/la-belle-aurore-latin-400-normal.woff2')
+    format('woff2');
 }
 
 /* El tema lo manda un atributo en <html>, no la media query, para que se pueda
@@ -106,8 +103,8 @@
   --color-danger-soft: var(--c-danger-soft);
   --color-on-danger: var(--c-on-danger);
 
-  --font-display: 'Fraunces Variable', ui-serif, Georgia, serif;
-  --font-sans: 'Nunito Variable', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-display: 'Lilita One', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'La Belle Aurore', ui-cursive, 'Segoe Script', cursive;
 
   --radius-soft: 0.875rem;
   --radius-card: 1.5rem;
@@ -131,6 +128,14 @@
     background-color: var(--color-bg);
     color: var(--color-text);
     font-family: var(--font-sans);
+    /* La Belle Aurore es una cursiva fina de un solo peso. Dos ajustes para que
+       se lea lo mejor posible como cuerpo:
+       - font-synthesis: none — sin negrita ni itálica falsas; sobre una cursiva
+         el navegador las inventa rompiendo los trazos. font-bold no cambia el
+         grosor: la jerarquía va por tamaño y color.
+       - más interlineado, porque los remates de una cursiva se enciman. */
+    font-synthesis: none;
+    line-height: 1.6;
     /* La app nunca hace scroll horizontal; el rebote lateral de iOS se siente
        a roto dentro de un PWA instalado. */
     overscroll-behavior-x: none;
@@ -141,12 +146,10 @@
   h2,
   h3 {
     font-family: var(--font-display);
-    /* SOFT (0–100) redondea las serifas: es lo que hace que Fraunces se lea
-       dulce en vez de editorial. WONK queda fuera porque afecta sobre todo a
-       la itálica, que no usamos, y obligaría a cargar el archivo `full`
-       (118 KB frente a 61 KB). */
-    font-variation-settings: 'SOFT' 60;
-    letter-spacing: -0.015em;
+    /* Lilita One ya es gruesa y redonda de fábrica; un pelín de tracking
+       negativo la compacta sin apretarla. */
+    letter-spacing: -0.01em;
+    line-height: 1.1;
   }
 
   /* 16px es el mínimo: por debajo iOS hace zoom al enfocar y descuadra toda
